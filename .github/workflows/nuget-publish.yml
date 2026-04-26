@@ -1,18 +1,8 @@
-name: Publish artifacts
+name: Publish NuGet artifacts
 
 on:
   workflow_call:
     inputs:
-      publish-docker:
-        description: 'Publish Docker image.'
-        required: false
-        type: boolean
-        default: false
-      docker-tags:
-        description: 'Docker image tag list.'
-        required: false
-        type: string
-        default: ''
       publish-nuget:
         description: 'Publish NuGet package.'
         required: false
@@ -89,7 +79,7 @@ on:
         type: string
         default: 'openapi-spec'
     secrets:
-      workflow_token:
+      GITHUB_TOKEN:
         description: 'GitHub token passed through from the calling workflow.'
         required: true
 
@@ -113,7 +103,7 @@ jobs:
         uses: ./.github/actions/dotnet-setup
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
-          github-token: ${{ secrets.workflow_token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore OpenAPI project
         if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
@@ -155,7 +145,7 @@ jobs:
 
       - name: Publish NuGet package to GitHub Packages
         env:
-          NUGET_API_KEY: ${{ secrets.workflow_token }}
+          NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for pkg in ./artifacts/*.nupkg; do
             dotnet nuget push "$pkg" \

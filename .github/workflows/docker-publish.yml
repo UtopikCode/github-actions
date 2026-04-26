@@ -1,4 +1,4 @@
-name: Publish artifacts
+name: Publish Docker artifacts
 
 on:
   workflow_call:
@@ -13,83 +13,8 @@ on:
         required: false
         type: string
         default: ''
-      publish-nuget:
-        description: 'Publish NuGet package.'
-        required: false
-        type: boolean
-        default: false
-      nuget-project:
-        description: 'NuGet project file path.'
-        required: false
-        type: string
-        default: ''
-      nuget-package-version:
-        description: 'Package version to apply when packing.'
-        required: false
-        type: string
-        default: ''
-      dotnet-version:
-        description: '.NET SDK version.'
-        required: false
-        type: string
-        default: '10.0'
-      openapi-project:
-        description: 'Project file used to build the OpenAPI DLL.'
-        required: false
-        type: string
-        default: ''
-      openapi-dll:
-        description: 'Compiled OpenAPI DLL path.'
-        required: false
-        type: string
-        default: ''
-      openapi-output:
-        description: 'OpenAPI JSON output file.'
-        required: false
-        type: string
-        default: 'openapi.json'
-      openapi-version:
-        description: 'OpenAPI document version / route.'
-        required: false
-        type: string
-        default: 'v1'
-      kiota-output:
-        description: 'Generated Kiota output folder.'
-        required: false
-        type: string
-        default: ''
-      kiota-namespace:
-        description: 'Generated Kiota namespace.'
-        required: false
-        type: string
-        default: ''
-      kiota-class-name:
-        description: 'Generated Kiota client class name.'
-        required: false
-        type: string
-        default: ''
-      openapi-tool-version:
-        description: 'Swashbuckle CLI tool version.'
-        required: false
-        type: string
-        default: '10.1.7'
-      kiota-version:
-        description: 'Kiota generator version.'
-        required: false
-        type: string
-        default: '1.31.1'
-      upload-openapi-artifact:
-        description: 'Upload generated OpenAPI JSON as a workflow artifact.'
-        required: false
-        type: boolean
-        default: false
-      openapi-artifact-name:
-        description: 'Artifact name for the generated OpenAPI JSON file.'
-        required: false
-        type: string
-        default: 'openapi-spec'
     secrets:
-      workflow_token:
+      GITHUB_TOKEN:
         description: 'GitHub token passed through from the calling workflow.'
         required: true
 
@@ -117,7 +42,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.workflow_token }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7.1.0

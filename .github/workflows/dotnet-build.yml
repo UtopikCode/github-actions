@@ -12,21 +12,6 @@ on:
         required: false
         type: string
         default: '10.0'
-      run-lint:
-        description: 'Run static analysis checks.'
-        required: false
-        type: boolean
-        default: true
-      run-format-check:
-        description: 'Run format verification.'
-        required: false
-        type: boolean
-        default: true
-      run-codeql:
-        description: 'Run CodeQL analysis.'
-        required: false
-        type: boolean
-        default: false
     secrets:
       GITHUB_TOKEN:
         required: true
