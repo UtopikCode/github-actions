@@ -48,3 +48,5 @@ jobs:
           push: true
           sbom: false
           tags: ${{ inputs.docker-tags }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
