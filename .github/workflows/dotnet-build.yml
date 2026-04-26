@@ -32,7 +32,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up .NET and authenticate GitHub Packages
-        uses: ./.github/actions/dotnet-setup
+        uses: UtopikCode/github-actions/.github/actions/dotnet-setup
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
