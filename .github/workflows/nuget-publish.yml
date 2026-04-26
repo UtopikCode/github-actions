@@ -68,12 +68,12 @@ on:
         required: false
         type: string
         default: '1.31.1'
-      upload-openapi-artifact:
+      openapi-upload-artifact:
         description: 'Upload generated OpenAPI JSON as a workflow artifact.'
         required: false
         type: boolean
-        default: false
-      openapi-artifact-name:
+        default: true
+      openapi-upload-artifact-name:
         description: 'Artifact name for the generated OpenAPI JSON file.'
         required: false
         type: string
@@ -151,8 +151,8 @@ jobs:
           done
 
       - name: Upload generated OpenAPI spec
-        if: ${{ inputs.upload-openapi-artifact && inputs.openapi-dll != '' }}
+        if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: ${{ inputs.openapi-artifact-name }}
+          name: ${{ inputs.openapi-upload-artifact-name }}
           path: ${{ inputs.openapi-output }}
