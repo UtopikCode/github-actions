@@ -48,7 +48,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up .NET and authenticate GitHub Packages
-        uses: UtopikCode/github-actions/.github/actions/dotnet-setup
+        uses: UtopikCode/github-actions/.github/actions/dotnet-setup@latest
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +71,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up .NET and authenticate GitHub Packages
-        uses: UtopikCode/github-actions/.github/actions/dotnet-setup
+        uses: UtopikCode/github-actions/.github/actions/dotnet-setup@latest
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -108,7 +108,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up .NET and authenticate GitHub Packages
-        uses: UtopikCode/github-actions/.github/actions/dotnet-setup
+        uses: UtopikCode/github-actions/.github/actions/dotnet-setup@latest
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
