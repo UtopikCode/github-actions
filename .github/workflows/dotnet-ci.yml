@@ -49,6 +49,11 @@ jobs:
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
 
+      - name: Configure GitHub Packages auth
+        run: |
+          dotnet nuget remove source GitHubPackages || true
+          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
+
       - name: Restore dependencies
         run: dotnet restore ${{ inputs.solution }}
 
@@ -70,6 +75,12 @@ jobs:
         uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Configure GitHub Packages auth
+        if: ${{ inputs.run-format-check }}
+        run: |
+          dotnet nuget remove source GitHubPackages || true
+          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
 
       - name: Install dotnet-format
         if: ${{ inputs.run-format-check }}
@@ -106,6 +117,11 @@ jobs:
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
 
+      - name: Configure GitHub Packages auth
+        run: |
+          dotnet nuget remove source GitHubPackages || true
+          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
+
       - name: Restore dependencies
         run: dotnet restore ${{ inputs.solution }}
 
@@ -128,6 +144,11 @@ jobs:
         uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Configure GitHub Packages auth
+        run: |
+          dotnet nuget remove source GitHubPackages || true
+          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
