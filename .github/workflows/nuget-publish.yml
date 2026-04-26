@@ -7,7 +7,7 @@ on:
         description: 'Publish NuGet package.'
         required: false
         type: boolean
-        default: false
+        default: true
       nuget-project:
         description: 'NuGet project file path.'
         required: false
