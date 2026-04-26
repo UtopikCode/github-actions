@@ -1,0 +1,206 @@
+name: Publish artifacts
+
+on:
+  workflow_call:
+    inputs:
+      publish-docker:
+        description: 'Publish Docker image.'
+        required: false
+        type: boolean
+        default: false
+      docker-tags:
+        description: 'Docker image tag list.'
+        required: false
+        type: string
+        default: ''
+      publish-nuget:
+        description: 'Publish NuGet package.'
+        required: false
+        type: boolean
+        default: false
+      nuget-project:
+        description: 'NuGet project file path.'
+        required: false
+        type: string
+        default: ''
+      nuget-package-version:
+        description: 'Package version to apply when packing.'
+        required: false
+        type: string
+        default: ''
+      dotnet-version:
+        description: '.NET SDK version.'
+        required: false
+        type: string
+        default: '10.0'
+      openapi-project:
+        description: 'Project file used to build the OpenAPI DLL.'
+        required: false
+        type: string
+        default: ''
+      openapi-dll:
+        description: 'Compiled OpenAPI DLL path.'
+        required: false
+        type: string
+        default: ''
+      openapi-output:
+        description: 'OpenAPI JSON output file.'
+        required: false
+        type: string
+        default: 'openapi.json'
+      openapi-version:
+        description: 'OpenAPI document version / route.'
+        required: false
+        type: string
+        default: 'v1'
+      kiota-output:
+        description: 'Generated Kiota output folder.'
+        required: false
+        type: string
+        default: ''
+      kiota-namespace:
+        description: 'Generated Kiota namespace.'
+        required: false
+        type: string
+        default: ''
+      kiota-class-name:
+        description: 'Generated Kiota client class name.'
+        required: false
+        type: string
+        default: ''
+      openapi-tool-version:
+        description: 'Swashbuckle CLI tool version.'
+        required: false
+        type: string
+        default: '10.1.7'
+      kiota-version:
+        description: 'Kiota generator version.'
+        required: false
+        type: string
+        default: '1.31.1'
+      upload-openapi-artifact:
+        description: 'Upload generated OpenAPI JSON as a workflow artifact.'
+        required: false
+        type: boolean
+        default: false
+      openapi-artifact-name:
+        description: 'Artifact name for the generated OpenAPI JSON file.'
+        required: false
+        type: string
+        default: 'openapi-spec'
+    secrets:
+      workflow_token:
+        description: 'GitHub token passed through from the calling workflow.'
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker-image:
+    if: ${{ inputs.publish-docker }}
+    name: Build & Publish Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.workflow_token }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7.1.0
+        with:
+          context: .
+          provenance: false
+          push: true
+          sbom: false
+          tags: ${{ inputs.docker-tags }}
+
+  nuget-package:
+    if: ${{ inputs.publish-nuget }}
+    name: Build & Publish NuGet package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Configure GitHub Packages auth
+        run: |
+          dotnet nuget remove source GitHubPackages || true
+          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.workflow_token }}" --store-password-in-clear-text
+
+      - name: Restore OpenAPI project
+        if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
+        run: dotnet restore ${{ inputs.openapi-project }}
+
+      - name: Build OpenAPI DLL
+        if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
+        run: dotnet build ${{ inputs.openapi-project }} --configuration Release --no-restore
+
+      - name: Install OpenAPI tooling
+        if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+        run: |
+          dotnet tool install --tool-path .tools Swashbuckle.AspNetCore.Cli --version ${{ inputs.openapi-tool-version }}
+          dotnet tool install --tool-path .tools microsoft.openapi.kiota --version ${{ inputs.kiota-version }}
+
+      - name: Generate OpenAPI spec from compiled DLL
+        if: ${{ inputs.openapi-dll != '' }}
+        env:
+          RUNNER_AUTH_MODE: private_token
+          RUNNER_AUTH_TOKEN: placeholder
+        run: |
+          ./.tools/swagger tofile --output ${{ inputs.openapi-output }} ${{ inputs.openapi-dll }} ${{ inputs.openapi-version }}
+
+      - name: Generate C# client from OpenAPI using Kiota
+        if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+        run: |
+          rm -rf ${{ inputs.kiota-output }}
+          mkdir -p ${{ inputs.kiota-output }}
+          ./.tools/kiota generate --openapi ${{ inputs.openapi-output }} --language CSharp --output ${{ inputs.kiota-output }} --namespace-name ${{ inputs.kiota-namespace }} --class-name ${{ inputs.kiota-class-name }} --clean-output
+
+      - name: Restore NuGet project
+        run: dotnet restore ${{ inputs.nuget-project }}
+
+      - name: Pack NuGet package
+        run: |
+          dotnet pack ${{ inputs.nuget-project }} \
+            --configuration Release \
+            --output ./artifacts /p:PackageVersion=${{ inputs.nuget-package-version }}
+
+      - name: Publish NuGet package to GitHub Packages
+        env:
+          NUGET_API_KEY: ${{ secrets.workflow_token }}
+        run: |
+          for pkg in ./artifacts/*.nupkg; do
+            dotnet nuget push "$pkg" \
+              --source "GitHubPackages" \
+              --api-key "$NUGET_API_KEY" \
+              --skip-duplicate
+          done
+
+      - name: Upload generated OpenAPI spec
+        if: ${{ inputs.upload-openapi-artifact && inputs.openapi-dll != '' }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ${{ inputs.openapi-artifact-name }}
+          path: ${{ inputs.openapi-output }}
