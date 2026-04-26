@@ -1,0 +1,79 @@
+name: Cleanup preview artifacts
+
+description: Delete preview Docker and NuGet package versions when a PR is closed.
+
+inputs:
+  package_name:
+    description: 'The GHCR container package name.'
+    required: true
+  nuget_package:
+    description: 'The NuGet package ID to delete.'
+    required: true
+  github_token:
+    description: 'GitHub token used to authenticate package deletion requests.'
+    required: true
+  pr_tag_prefix:
+    description: 'Prefix used for PR Docker tags.'
+    required: false
+    default: 'pr-'
+  nuget_version_prefix:
+    description: 'Prefix used for preview NuGet package versions.'
+    required: false
+    default: '0.0.0-alpha.'
+
+runs:
+  using: composite
+  steps:
+    - name: Delete PR Docker image from GHCR
+      shell: bash
+      run: |
+        set -euo pipefail
+        PR_TAG="${INPUT_PR_TAG_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+        OWNER="${GITHUB_REPOSITORY_OWNER}"
+        PACKAGE_NAME="${INPUT_PACKAGE_NAME}"
+        TOKEN="${INPUT_GITHUB_TOKEN}"
+
+        for SCOPE in orgs users; do
+          URL="https://api.github.com/${SCOPE}/${OWNER}/packages/container/${PACKAGE_NAME}/versions"
+          RESPONSE=$(curl -sSL -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}" || true)
+          if printf '%s' "$RESPONSE" | grep -q 'Not Found'; then
+            continue
+          fi
+          IDS=$(printf '%s' "$RESPONSE" | jq -r --arg TAG "$PR_TAG" '.[] | select(.metadata.container.tags[]? == $TAG) | .id')
+          if [ -z "$IDS" ]; then
+            continue
+          fi
+          for ID in $IDS; do
+            echo "Deleting GHCR package version $ID for tag $PR_TAG"
+            curl -sSL -X DELETE -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}/${ID}"
+          done
+        done
+      env:
+        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+
+    - name: Delete PR NuGet package version
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION="${INPUT_NUGET_VERSION_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+        PACKAGE="${INPUT_NUGET_PACKAGE}"
+        OWNER="${GITHUB_REPOSITORY_OWNER}"
+        TOKEN="${INPUT_GITHUB_TOKEN}"
+
+        for SCOPE in orgs users; do
+          URL="https://api.github.com/${SCOPE}/${OWNER}/packages/nuget/${PACKAGE}/versions"
+          RESPONSE=$(curl -sSL -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}" || true)
+          if printf '%s' "$RESPONSE" | grep -q 'Not Found'; then
+            continue
+          fi
+          IDS=$(printf '%s' "$RESPONSE" | jq -r --arg VERSION "$VERSION" '.[] | select((.metadata.version // .metadata.package_version) == $VERSION) | .id')
+          if [ -z "$IDS" ]; then
+            continue
+          fi
+          for ID in $IDS; do
+            echo "Deleting NuGet package $PACKAGE version $VERSION from $SCOPE/$OWNER (id=$ID)"
+            curl -sSL -X DELETE -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}/${ID}"
+          done
+        done
+      env:
+        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}

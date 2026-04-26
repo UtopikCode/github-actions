@@ -1,0 +1,141 @@
+name: .NET CI
+
+on:
+  workflow_call:
+    inputs:
+      solution:
+        description: 'Solution or project path for restore/build.'
+        required: true
+        type: string
+      dotnet-version:
+        description: '.NET SDK version.'
+        required: false
+        type: string
+        default: '10.0'
+      run-lint:
+        description: 'Run static analysis checks.'
+        required: false
+        type: boolean
+        default: true
+      run-format-check:
+        description: 'Run format verification.'
+        required: false
+        type: boolean
+        default: true
+      run-codeql:
+        description: 'Run CodeQL analysis.'
+        required: false
+        type: boolean
+        default: false
+    # no secrets required for this reusable CI workflow
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ inputs.solution }}
+
+      - name: Run static analysis
+        if: ${{ inputs.run-lint }}
+        run: dotnet build ${{ inputs.solution }} --configuration Release /p:EnableNETAnalyzers=true /p:AnalysisModeAll=AllRules --no-restore
+
+  format:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Install dotnet-format
+        if: ${{ inputs.run-format-check }}
+        run: |
+          set -euo pipefail
+          dotnet tool install -g dotnet-format
+
+      - name: Restore dependencies
+        if: ${{ inputs.run-format-check }}
+        run: |
+          set -euo pipefail
+          dotnet restore ${{ inputs.solution }}
+
+      - name: Check formatting
+        if: ${{ inputs.run-format-check }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet format ${{ inputs.solution }} --verify-no-changes --verbosity diagnostic
+
+  build:
+    name: Build project
+    needs: [lint, format]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ inputs.solution }}
+
+      - name: Build solution
+        run: dotnet build ${{ inputs.solution }} --configuration Release --no-restore
+
+  codeql:
+    if: ${{ inputs.run-codeql }}
+    name: Analyze with CodeQL
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: csharp
+          build-mode: manual
+
+      - name: Build solution for CodeQL
+        run: dotnet build ${{ inputs.solution }} --configuration Debug
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4
