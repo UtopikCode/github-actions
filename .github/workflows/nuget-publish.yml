@@ -78,6 +78,11 @@ on:
         required: false
         type: string
         default: 'openapi-spec'
+      nuget-overwrite:
+        description: 'Delete existing package version before publishing so same version can be republished.'
+        required: false
+        type: boolean
+        default: true
         
 permissions:
   contents: read
@@ -144,6 +149,16 @@ jobs:
           NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for pkg in ./artifacts/*.nupkg; do
+            if [ "${{ inputs.nuget-overwrite }}" = 'true' ]; then
+              id=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<id>)[^<]+' | head -n 1)
+              version=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<version>)[^<]+' | head -n 1)
+              echo "Deleting existing package $id version $version if it already exists on GitHub Packages..."
+              dotnet nuget delete "$id" "$version" \
+                --source "GitHubPackages" \
+                --api-key "$NUGET_API_KEY" \
+                --non-interactive || true
+            fi
+
             dotnet nuget push "$pkg" \
               --source "GitHubPackages" \
               --api-key "$NUGET_API_KEY" \
