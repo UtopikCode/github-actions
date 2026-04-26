@@ -26,7 +26,7 @@ on:
         description: 'Run CodeQL analysis.'
         required: false
         type: boolean
-        default: false
+        default: true
     secrets:
       GITHUB_TOKEN:
         required: true
