@@ -153,11 +153,7 @@ jobs:
               id=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<id>)[^<]+' | head -n 1)
               version=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<version>)[^<]+' | head -n 1)
               echo "Deleting existing package $id version $version if it already exists on GitHub Packages..."
-              package_name=$(python3 - <<'PY'
-import sys, urllib.parse
-print(urllib.parse.quote(sys.argv[1], safe=''))
-PY
- "$id")
+              package_name=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$id")
               owner=${{ github.repository_owner }}
               get_version_id() {
                 curl -sS -H "Authorization: Bearer $NUGET_API_KEY" -H "Accept: application/vnd.github+json" "$1" \
