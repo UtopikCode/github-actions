@@ -21,6 +21,7 @@ runs:
         dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: Configure GitHub Packages auth
+      shell: bash
       run: |
         dotnet nuget remove source GitHubPackages || true
         dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
