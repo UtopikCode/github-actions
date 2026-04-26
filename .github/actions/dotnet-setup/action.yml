@@ -1,0 +1,26 @@
+name: Setup .NET and GitHub Packages auth
+
+description: |
+  Installs a .NET SDK and configures GitHub Packages authentication for dotnet restore/build.
+
+inputs:
+  dotnet-version:
+    description: '.NET SDK version.'
+    required: false
+    default: '10.0'
+  github-token:
+    description: 'GitHub token used for GitHub Packages authentication.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v5.2.0
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Configure GitHub Packages auth
+      run: |
+        dotnet nuget remove source GitHubPackages || true
+        dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ inputs.github-token }}" --store-password-in-clear-text

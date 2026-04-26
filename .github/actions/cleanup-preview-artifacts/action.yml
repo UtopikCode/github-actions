@@ -12,10 +12,10 @@ inputs:
   github_token:
     description: 'GitHub token used to authenticate package deletion requests.'
     required: true
-  pr_tag_prefix:
+  docker_tag_prefix:
     description: 'Prefix used for PR Docker tags.'
     required: false
-    default: 'pr-'
+    default: '0.0.0-alpha.'
   nuget_version_prefix:
     description: 'Prefix used for preview NuGet package versions.'
     required: false
@@ -28,7 +28,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        PR_TAG="${INPUT_PR_TAG_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+        PR_TAG="${INPUT_DOCKER_TAG_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
         OWNER="${GITHUB_REPOSITORY_OWNER}"
         PACKAGE_NAME="${INPUT_PACKAGE_NAME}"
         TOKEN="${INPUT_GITHUB_TOKEN}"

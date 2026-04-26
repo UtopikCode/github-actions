@@ -1,4 +1,4 @@
-name: .NET CI
+name: Code quality checks
 
 on:
   workflow_call:
@@ -27,11 +27,14 @@ on:
         required: false
         type: boolean
         default: false
-    # no secrets required for this reusable CI workflow
+    secrets:
+      GITHUB_TOKEN:
+        required: true
 
 permissions:
   contents: read
   packages: read
+  security-events: write
 
 jobs:
   lint:
@@ -44,15 +47,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v5.2.0
+      - name: Set up .NET and authenticate GitHub Packages
+        uses: ./.github/actions/dotnet-setup
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
-
-      - name: Configure GitHub Packages auth
-        run: |
-          dotnet nuget remove source GitHubPackages || true
-          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore dependencies
         run: dotnet restore ${{ inputs.solution }}
@@ -71,16 +70,12 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v5.2.0
+      - name: Set up .NET and authenticate GitHub Packages
+        uses: ./.github/actions/dotnet-setup
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
-
-      - name: Configure GitHub Packages auth
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         if: ${{ inputs.run-format-check }}
-        run: |
-          dotnet nuget remove source GitHubPackages || true
-          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
 
       - name: Install dotnet-format
         if: ${{ inputs.run-format-check }}
@@ -101,37 +96,9 @@ jobs:
           set -euo pipefail
           dotnet format ${{ inputs.solution }} --verify-no-changes --verbosity diagnostic
 
-  build:
-    name: Build project
-    needs: [lint, format]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v5.2.0
-        with:
-          dotnet-version: ${{ inputs.dotnet-version }}
-
-      - name: Configure GitHub Packages auth
-        run: |
-          dotnet nuget remove source GitHubPackages || true
-          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
-
-      - name: Restore dependencies
-        run: dotnet restore ${{ inputs.solution }}
-
-      - name: Build solution
-        run: dotnet build ${{ inputs.solution }} --configuration Release --no-restore
-
   codeql:
     if: ${{ inputs.run-codeql }}
     name: Analyze with CodeQL
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -140,15 +107,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v5.2.0
+      - name: Set up .NET and authenticate GitHub Packages
+        uses: ./.github/actions/dotnet-setup
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
-
-      - name: Configure GitHub Packages auth
-        run: |
-          dotnet nuget remove source GitHubPackages || true
-          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name GitHubPackages --username github --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
