@@ -78,11 +78,7 @@ on:
         required: false
         type: string
         default: 'openapi-spec'
-    # secrets:
-    #   GITHUB_TOKEN:
-    #     description: 'GitHub token passed through from the calling workflow.'
-    #     required: true
-
+        
 permissions:
   contents: read
   packages: write
