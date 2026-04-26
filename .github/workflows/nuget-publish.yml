@@ -153,10 +153,30 @@ jobs:
               id=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<id>)[^<]+' | head -n 1)
               version=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<version>)[^<]+' | head -n 1)
               echo "Deleting existing package $id version $version if it already exists on GitHub Packages..."
-              dotnet nuget delete "$id" "$version" \
-                --source "GitHubPackages" \
-                --api-key "$NUGET_API_KEY" \
-                --non-interactive || true
+              package_name=$(python3 - <<'PY'
+import sys, urllib.parse
+print(urllib.parse.quote(sys.argv[1], safe=''))
+PY
+ "$id")
+              owner=${{ github.repository_owner }}
+              get_version_id() {
+                curl -sS -H "Authorization: Bearer $NUGET_API_KEY" -H "Accept: application/vnd.github+json" "$1" \
+                  | python3 -c "import json,sys; data=json.load(sys.stdin); items=data if isinstance(data, list) else []; print(next((str(item['id']) for item in items if item.get('name')==sys.argv[1]), ''))" "$version"
+              }
+
+              pkg_version_id=$(get_version_id "https://api.github.com/orgs/$owner/packages/nuget/$package_name/versions")
+              delete_url="https://api.github.com/orgs/$owner/packages/nuget/$package_name/versions"
+              if [ -z "$pkg_version_id" ]; then
+                pkg_version_id=$(get_version_id "https://api.github.com/users/$owner/packages/nuget/$package_name/versions")
+                delete_url="https://api.github.com/users/$owner/packages/nuget/$package_name/versions"
+              fi
+
+              if [ -n "$pkg_version_id" ]; then
+                curl -sS -X DELETE -H "Authorization: Bearer $NUGET_API_KEY" -H "Accept: application/vnd.github+json" \
+                  "$delete_url/$pkg_version_id" || true
+              else
+                echo "No existing package version found, skipping delete."
+              fi
             fi
 
             dotnet nuget push "$pkg" \
