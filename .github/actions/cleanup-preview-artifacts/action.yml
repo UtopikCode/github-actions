@@ -1,6 +1,6 @@
 name: Cleanup preview artifacts
 
-description: Delete preview Docker and NuGet package versions when a PR is closed.
+description: Delete preview Docker, NuGet, and npm package versions when a PR is closed.
 
 inputs:
   package_name:
@@ -8,6 +8,9 @@ inputs:
     required: true
   nuget_package:
     description: 'The NuGet package ID to delete.'
+    required: true
+  npm_package:
+    description: 'The npm package name to delete.'
     required: true
   github_token:
     description: 'GitHub token used to authenticate package deletion requests.'
@@ -18,6 +21,10 @@ inputs:
     default: '0.0.0-alpha.'
   nuget_version_prefix:
     description: 'Prefix used for preview NuGet package versions.'
+    required: false
+    default: '0.0.0-alpha.'
+  npm_version_prefix:
+    description: 'Prefix used for preview npm package versions.'
     required: false
     default: '0.0.0-alpha.'
 
@@ -72,6 +79,33 @@ runs:
           fi
           for ID in $IDS; do
             echo "Deleting NuGet package $PACKAGE version $VERSION from $SCOPE/$OWNER (id=$ID)"
+            curl -sSL -X DELETE -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}/${ID}"
+          done
+        done
+      env:
+        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+
+    - name: Delete PR npm package version
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION="${INPUT_NPM_VERSION_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+        PACKAGE="${INPUT_NPM_PACKAGE}"
+        OWNER="${GITHUB_REPOSITORY_OWNER}"
+        TOKEN="${INPUT_GITHUB_TOKEN}"
+
+        for SCOPE in orgs users; do
+          URL="https://api.github.com/${SCOPE}/${OWNER}/packages/npm/${PACKAGE}/versions"
+          RESPONSE=$(curl -sSL -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}" || true)
+          if printf '%s' "$RESPONSE" | grep -q 'Not Found'; then
+            continue
+          fi
+          IDS=$(printf '%s' "$RESPONSE" | jq -r --arg VERSION "$VERSION" '.[] | select((.metadata.version // .metadata.package_version) == $VERSION) | .id')
+          if [ -z "$IDS" ]; then
+            continue
+          fi
+          for ID in $IDS; do
+            echo "Deleting npm package $PACKAGE version $VERSION from $SCOPE/$OWNER (id=$ID)"
             curl -sSL -X DELETE -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}/${ID}"
           done
         done

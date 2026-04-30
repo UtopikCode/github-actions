@@ -1,0 +1,61 @@
+name: Cleanup preview artifacts
+
+on:
+  workflow_call:
+    inputs:
+      package-name:
+        description: 'The GHCR container package name.'
+        required: true
+        type: string
+      nuget-package:
+        description: 'The NuGet package ID to delete.'
+        required: true
+        type: string
+      npm-package:
+        description: 'The npm package name to delete.'
+        required: true
+        type: string
+      github-token:
+        description: 'GitHub token used to authenticate package deletion requests.'
+        required: true
+        type: string
+      docker-tag-prefix:
+        description: 'Prefix used for PR Docker tags.'
+        required: false
+        type: string
+        default: '0.0.0-alpha.'
+      nuget-version-prefix:
+        description: 'Prefix used for preview NuGet package versions.'
+        required: false
+        type: string
+        default: '0.0.0-alpha.'
+      npm-version-prefix:
+        description: 'Prefix used for preview npm package versions.'
+        required: false
+        type: string
+        default: '0.0.0-alpha.'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Cleanup preview artifacts
+        uses: UtopikCode/github-actions/.github/actions/cleanup-preview-artifacts@main
+        with:
+          package_name: ${{ inputs.package-name }}
+          nuget_package: ${{ inputs.nuget-package }}
+          npm_package: ${{ inputs.npm-package }}
+          github_token: ${{ inputs.github-token }}
+          docker_tag_prefix: ${{ inputs.docker-tag-prefix }}
+          nuget_version_prefix: ${{ inputs.nuget-version-prefix }}
+          npm_version_prefix: ${{ inputs.npm-version-prefix }}

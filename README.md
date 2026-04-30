@@ -147,12 +147,33 @@ steps:
 
 ### Cleanup preview artifacts
 
+Use the cleanup composite action in a workflow job to delete preview Docker and NuGet package versions when a pull request is closed.
+
+```yaml
+name: Cleanup preview artifacts
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    uses: UtopikCode/github-actions/.github/workflows/cleanup-preview-artifacts.yml@main
+    with:
+      package-name: 'my-container-image'
+      nuget-package: 'My.Package'
+      npm-package: '@my-scope/my-package'
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+If you need a one-off step in an existing workflow, you can also use the composite action directly inside `steps:` as shown below:
+
 ```yaml
 steps:
   - uses: UtopikCode/github-actions/.github/actions/cleanup-preview-artifacts@main
     with:
       package_name: 'my-container-image'
       nuget_package: 'My.Package'
+      npm_package: '@my-scope/my-package'
       github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
