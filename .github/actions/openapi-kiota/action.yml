@@ -1,0 +1,93 @@
+name: Generate OpenAPI and Kiota client
+
+description: |
+  Generates an OpenAPI document from a compiled .NET DLL and optionally generates a Kiota client.
+
+inputs:
+  openapi-project:
+    description: 'Project file used to build the OpenAPI DLL.'
+    required: false
+    default: ''
+  openapi-dll:
+    description: 'Compiled OpenAPI DLL path.'
+    required: false
+    default: ''
+  openapi-output:
+    description: 'OpenAPI JSON output file.'
+    required: false
+    default: 'openapi.json'
+  openapi-version:
+    description: 'OpenAPI document version / route.'
+    required: false
+    default: 'v1'
+  openapi-tool-version:
+    description: 'Swashbuckle CLI tool version.'
+    required: false
+    default: '10.1.7'
+  kiota-output:
+    description: 'Generated Kiota output folder.'
+    required: false
+    default: ''
+  kiota-namespace:
+    description: 'Generated Kiota namespace.'
+    required: false
+    default: ''
+  kiota-class-name:
+    description: 'Generated Kiota client class name.'
+    required: false
+    default: ''
+  kiota-language:
+    description: 'Kiota language to generate.'
+    required: false
+    default: 'TypeScript'
+  kiota-version:
+    description: 'Kiota generator version.'
+    required: false
+    default: '1.31.1'
+  openapi-upload-artifact:
+    description: 'Upload generated OpenAPI JSON as a workflow artifact.'
+    required: false
+    default: true
+  openapi-upload-artifact-name:
+    description: 'Artifact name for the generated OpenAPI JSON file.'
+    required: false
+    default: 'openapi-spec'
+
+runs:
+  using: composite
+  steps:
+    - name: Restore OpenAPI project
+      if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
+      run: dotnet restore ${{ inputs.openapi-project }}
+
+    - name: Build OpenAPI DLL
+      if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
+      run: dotnet build ${{ inputs.openapi-project }} --configuration Release --no-restore
+
+    - name: Install OpenAPI tooling
+      if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+      run: |
+        dotnet tool install --tool-path .tools Swashbuckle.AspNetCore.Cli --version ${{ inputs.openapi-tool-version }}
+        dotnet tool install --tool-path .tools microsoft.openapi.kiota --version ${{ inputs.kiota-version }}
+
+    - name: Generate OpenAPI spec from compiled DLL
+      if: ${{ inputs.openapi-dll != '' }}
+      env:
+        RUNNER_AUTH_MODE: private_token
+        RUNNER_AUTH_TOKEN: placeholder
+      run: |
+        ./.tools/swagger tofile --output ${{ inputs.openapi-output }} ${{ inputs.openapi-dll }} ${{ inputs.openapi-version }}
+
+    - name: Generate Kiota client from OpenAPI
+      if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+      run: |
+        rm -rf ${{ inputs.kiota-output }}
+        mkdir -p ${{ inputs.kiota-output }}
+        ./.tools/kiota generate --openapi ${{ inputs.openapi-output }} --language ${{ inputs.kiota-language }} --output ${{ inputs.kiota-output }} --namespace-name ${{ inputs.kiota-namespace }} --class-name ${{ inputs.kiota-class-name }} --clean-output
+
+    - name: Upload generated OpenAPI spec
+      if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
+      uses: actions/upload-artifact@v7.0.1
+      with:
+        name: ${{ inputs.openapi-upload-artifact-name }}
+        path: ${{ inputs.openapi-output }}

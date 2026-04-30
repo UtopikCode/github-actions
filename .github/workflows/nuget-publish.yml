@@ -106,34 +106,21 @@ jobs:
           dotnet-version: ${{ inputs.dotnet-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore OpenAPI project
-        if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
-        run: dotnet restore ${{ inputs.openapi-project }}
-
-      - name: Build OpenAPI DLL
-        if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
-        run: dotnet build ${{ inputs.openapi-project }} --configuration Release --no-restore
-
-      - name: Install OpenAPI tooling
-        if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
-        run: |
-          dotnet tool install --tool-path .tools Swashbuckle.AspNetCore.Cli --version ${{ inputs.openapi-tool-version }}
-          dotnet tool install --tool-path .tools microsoft.openapi.kiota --version ${{ inputs.kiota-version }}
-
-      - name: Generate OpenAPI spec from compiled DLL
-        if: ${{ inputs.openapi-dll != '' }}
-        env:
-          RUNNER_AUTH_MODE: private_token
-          RUNNER_AUTH_TOKEN: placeholder
-        run: |
-          ./.tools/swagger tofile --output ${{ inputs.openapi-output }} ${{ inputs.openapi-dll }} ${{ inputs.openapi-version }}
-
-      - name: Generate C# client from OpenAPI using Kiota
-        if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
-        run: |
-          rm -rf ${{ inputs.kiota-output }}
-          mkdir -p ${{ inputs.kiota-output }}
-          ./.tools/kiota generate --openapi ${{ inputs.openapi-output }} --language CSharp --output ${{ inputs.kiota-output }} --namespace-name ${{ inputs.kiota-namespace }} --class-name ${{ inputs.kiota-class-name }} --clean-output
+      - name: Generate OpenAPI client
+        uses: UtopikCode/github-actions/.github/actions/openapi-kiota@main
+        with:
+          openapi-project: ${{ inputs.openapi-project }}
+          openapi-dll: ${{ inputs.openapi-dll }}
+          openapi-output: ${{ inputs.openapi-output }}
+          openapi-version: ${{ inputs.openapi-version }}
+          kiota-output: ${{ inputs.kiota-output }}
+          kiota-namespace: ${{ inputs.kiota-namespace }}
+          kiota-class-name: ${{ inputs.kiota-class-name }}
+          kiota-language: 'CSharp'
+          openapi-tool-version: ${{ inputs.openapi-tool-version }}
+          kiota-version: ${{ inputs.kiota-version }}
+          openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
+          openapi-upload-artifact-name: ${{ inputs.openapi-upload-artifact-name }}
 
       - name: Restore NuGet project
         run: dotnet restore ${{ inputs.nuget-project }}

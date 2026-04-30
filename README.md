@@ -14,6 +14,8 @@ A reusable GitHub Actions repository for .NET, Docker, NuGet, and preview cleanu
   - Reusable NuGet package publish workflow with optional OpenAPI/Kiota generation.
 - `.github/workflows/npm-publish.yml`
   - Reusable npm package publish workflow for TypeScript/JavaScript packages.
+- `.github/actions/openapi-kiota`
+  - Composite action to generate an OpenAPI document and create a Kiota client for C# or TypeScript.
 - `.github/actions/dotnet-setup`
   - Composite action to install .NET and configure GitHub Packages authentication.
 - `.github/actions/cleanup-preview-artifacts`
@@ -105,6 +107,33 @@ jobs:
       registry: 'https://registry.npmjs.org/'
       npm-auth-token: ${{ secrets.NPM_TOKEN }}
 ```
+
+### Publish a TypeScript client from a .NET API
+
+```yaml
+jobs:
+  publish_npm:
+    uses: UtopikCode/github-actions/.github/workflows/npm-publish.yml@main
+    with:
+      publish-npm: true
+      package-dir: 'packages/my-ts-client'
+      package-version: '1.0.0'
+      npm-tag: 'latest'
+      node-version: '20'
+      registry: 'https://npm.pkg.github.com/'
+      npm-auth-token: ${{ secrets.GITHUB_TOKEN }}
+      openapi-project: 'src/MyApi/MyApi.csproj'
+      openapi-dll: 'src/MyApi/bin/Release/net10/MyApi.dll'
+      openapi-output: 'openapi.json'
+      openapi-version: 'v1'
+      kiota-output: 'packages/my-ts-client'
+      kiota-namespace: 'MyApiClient'
+      kiota-class-name: 'ApiClient'
+      openapi-tool-version: '10.1.7'
+      kiota-version: '1.31.1'
+```
+
+If `package-dir` is left as `'.'`, the workflow will publish from `kiota-output` when TypeScript client generation is enabled.
 
 ### Use the shared dotnet setup action
 
