@@ -154,6 +154,44 @@ jobs:
           fi
           echo "PUBLISH_DIR=${publish_dir}" >> $GITHUB_ENV
 
+      - name: Generate default package.json for generated TypeScript client
+        if: ${{ inputs.kiota-output != '' }}
+        env:
+          PACKAGE_VERSION: ${{ inputs.package-version }}
+          KIOTA_NAMESPACE: ${{ inputs.kiota-namespace }}
+        run: |
+          cd "$PUBLISH_DIR"
+          if [ -f package.json ]; then
+            echo "package.json already exists in $PUBLISH_DIR"
+            exit 0
+          fi
+
+          if [ -z "$PACKAGE_VERSION" ]; then
+            PACKAGE_VERSION="0.1.0"
+          fi
+
+          package_name=$(basename "$PUBLISH_DIR" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g')
+          if [ -z "$package_name" ]; then
+            package_name="generated-client"
+          fi
+
+          cat > package.json <<EOF
+            {
+              "name": "$package_name",
+              "version": "$PACKAGE_VERSION",
+              "description": "Generated TypeScript client for ${KIOTA_NAMESPACE}",
+              "main": "index.js",
+              "types": "index.d.ts",
+              "files": ["."],
+              "license": "MIT"
+            }
+          EOF
+            echo "ERROR: package.json not found in $PUBLISH_DIR"
+            echo "Ensure the publish directory contains a valid npm package manifest."
+            echo "If you are generating a TypeScript client with Kiota, set package-dir to an existing package folder or add a package.json to the generated output."
+            exit 1
+          fi
+
       - name: Install package dependencies
         run: |
           cd "$PUBLISH_DIR"

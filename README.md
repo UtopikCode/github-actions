@@ -135,6 +135,8 @@ jobs:
 
 If `package-dir` is left as `'.'`, the workflow will publish from `kiota-output` when TypeScript client generation is enabled.
 
+The publish directory must contain a `package.json` file. If Kiota output does not include a manifest, point `package-dir` to a folder with an existing npm package manifest or add one to the generated output before publishing.
+
 ### Use the shared dotnet setup action
 
 ```yaml
