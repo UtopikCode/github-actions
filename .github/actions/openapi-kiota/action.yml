@@ -86,9 +86,26 @@ runs:
       if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
       shell: bash
       run: |
-        rm -rf ${{ inputs.kiota-output }}
-        mkdir -p ${{ inputs.kiota-output }}
-        ./.tools/kiota generate --openapi ${{ inputs.openapi-output }} --language ${{ inputs.kiota-language }} --output ${{ inputs.kiota-output }} --namespace-name ${{ inputs.kiota-namespace }} --class-name ${{ inputs.kiota-class-name }} --clean-output
+        OUTPUT_DIR="${{ inputs.kiota-output }}"
+        PRESERVE_FILES="package.json package-lock.json README.md README tsconfig.json .npmignore"
+        BACKUP_DIR=""
+
+        if [ -d "$OUTPUT_DIR" ]; then
+          BACKUP_DIR=$(mktemp -d)
+          for FILE in $PRESERVE_FILES; do
+            if [ -e "$OUTPUT_DIR/$FILE" ]; then
+              mv "$OUTPUT_DIR/$FILE" "$BACKUP_DIR/"
+            fi
+          done
+        fi
+
+        rm -rf "$OUTPUT_DIR"
+        mkdir -p "$OUTPUT_DIR"
+        ./.tools/kiota generate --openapi ${{ inputs.openapi-output }} --language ${{ inputs.kiota-language }} --output "$OUTPUT_DIR" --namespace-name ${{ inputs.kiota-namespace }} --class-name ${{ inputs.kiota-class-name }} --clean-output
+
+        if [ -n "$BACKUP_DIR" ] && [ -d "$BACKUP_DIR" ]; then
+          mv "$BACKUP_DIR"/* "$OUTPUT_DIR" 2>/dev/null || true
+        fi
 
     - name: Upload generated OpenAPI spec
       if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
