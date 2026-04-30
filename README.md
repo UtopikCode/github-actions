@@ -12,6 +12,8 @@ A reusable GitHub Actions repository for .NET, Docker, NuGet, and preview cleanu
   - Reusable Docker build + publish workflow for GHCR images.
 - `.github/workflows/nuget-publish.yml`
   - Reusable NuGet package publish workflow with optional OpenAPI/Kiota generation.
+- `.github/workflows/npm-publish.yml`
+  - Reusable npm package publish workflow for TypeScript/JavaScript packages.
 - `.github/actions/dotnet-setup`
   - Composite action to install .NET and configure GitHub Packages authentication.
 - `.github/actions/cleanup-preview-artifacts`
@@ -70,6 +72,38 @@ jobs:
       nuget-project: 'src/MyPackage/MyPackage.csproj'
       nuget-package-version: '1.0.0'
       dotnet-version: '10.0'
+```
+
+### Publish npm packages
+
+```yaml
+jobs:
+  publish_npm:
+    uses: UtopikCode/github-actions/.github/workflows/npm-publish.yml@main
+    with:
+      publish-npm: true
+      package-dir: 'packages/my-ts-package'
+      package-version: '1.0.0'
+      npm-tag: 'latest'
+      node-version: '20'
+      registry: 'https://npm.pkg.github.com/'
+      npm-auth-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+For npmjs.org, pass a registry URL and an npm token instead:
+
+```yaml
+jobs:
+  publish_npm:
+    uses: UtopikCode/github-actions/.github/workflows/npm-publish.yml@main
+    with:
+      publish-npm: true
+      package-dir: 'packages/my-ts-package'
+      package-version: '1.0.0'
+      npm-tag: 'latest'
+      node-version: '20'
+      registry: 'https://registry.npmjs.org/'
+      npm-auth-token: ${{ secrets.NPM_TOKEN }}
 ```
 
 ### Use the shared dotnet setup action

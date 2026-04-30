@@ -1,0 +1,90 @@
+name: Publish npm artifacts
+
+on:
+  workflow_call:
+    inputs:
+      publish-npm:
+        description: 'Publish npm package.'
+        required: false
+        type: boolean
+        default: true
+      package-dir:
+        description: 'Directory containing package.json.'
+        required: false
+        type: string
+        default: '.'
+      package-version:
+        description: 'Package version to apply before publishing.'
+        required: false
+        type: string
+        default: ''
+      npm-tag:
+        description: 'npm dist-tag to publish under.'
+        required: false
+        type: string
+        default: 'latest'
+      node-version:
+        description: 'Node.js version.'
+        required: false
+        type: string
+        default: '20'
+      registry:
+        description: 'npm registry URL.'
+        required: false
+        type: string
+        default: 'https://npm.pkg.github.com/'
+      npm-access:
+        description: 'npm publish access mode (public or restricted).'
+        required: false
+        type: string
+        default: 'public'
+      npm-auth-token:
+        description: 'Authentication token for the npm registry. If blank, the workflow uses the GitHub token for GitHub Packages.'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  npm-package:
+    if: ${{ inputs.publish-npm }}
+    name: Build & Publish npm package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node.js and auth
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ inputs.node-version }}
+          registry-url: ${{ inputs.registry }}
+          always-auth: true
+        env:
+          NODE_AUTH_TOKEN: ${{ inputs.npm-auth-token != '' && inputs.npm-auth-token || secrets.GITHUB_TOKEN }}
+
+      - name: Install package dependencies
+        run: |
+          cd ${{ inputs.package-dir }}
+          npm install --no-audit --prefer-offline
+
+      - name: Set package version
+        if: ${{ inputs.package-version != '' }}
+        run: |
+          cd ${{ inputs.package-dir }}
+          npm version --no-git-tag-version "${{ inputs.package-version }}"
+
+      - name: Publish npm package
+        run: |
+          cd ${{ inputs.package-dir }}
+          access=''
+          if [ "${{ inputs.npm-access }}" = 'public' ]; then
+            access='--access public'
+          fi
+          npm publish . --tag "${{ inputs.npm-tag }}" --registry "${{ inputs.registry }}" $access
