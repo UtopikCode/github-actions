@@ -58,20 +58,24 @@ runs:
   steps:
     - name: Restore OpenAPI project
       if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
+      shell: bash
       run: dotnet restore ${{ inputs.openapi-project }}
 
     - name: Build OpenAPI DLL
       if: ${{ inputs.openapi-project != '' && inputs.openapi-dll != '' }}
+      shell: bash
       run: dotnet build ${{ inputs.openapi-project }} --configuration Release --no-restore
 
     - name: Install OpenAPI tooling
       if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+      shell: bash
       run: |
         dotnet tool install --tool-path .tools Swashbuckle.AspNetCore.Cli --version ${{ inputs.openapi-tool-version }}
         dotnet tool install --tool-path .tools microsoft.openapi.kiota --version ${{ inputs.kiota-version }}
 
     - name: Generate OpenAPI spec from compiled DLL
       if: ${{ inputs.openapi-dll != '' }}
+      shell: bash
       env:
         RUNNER_AUTH_MODE: private_token
         RUNNER_AUTH_TOKEN: placeholder
@@ -80,6 +84,7 @@ runs:
 
     - name: Generate Kiota client from OpenAPI
       if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+      shell: bash
       run: |
         rm -rf ${{ inputs.kiota-output }}
         mkdir -p ${{ inputs.kiota-output }}
