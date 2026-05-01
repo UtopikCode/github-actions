@@ -226,7 +226,7 @@ jobs:
 
           get_version_id() {
               curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" |
-                python3 .github/scripts/get_npm_version_id.py "$name" "$version"
+                python3 "$GITHUB_WORKSPACE/.github/scripts/get_npm_version_id.py" "$name" "$version"
           }
 
           for scope in orgs users; do

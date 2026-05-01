@@ -149,7 +149,7 @@ jobs:
               owner=${{ github.repository_owner }}
               get_version_id() {
                 curl -sS -H "Authorization: Bearer $NUGET_API_KEY" -H "Accept: application/vnd.github+json" "$1" \
-                  | python3 .github/scripts/get_nuget_version_id.py "$version"
+                  | python3 "$GITHUB_WORKSPACE/.github/scripts/get_nuget_version_id.py" "$version"
               }
 
               pkg_version_id=$(get_version_id "https://api.github.com/orgs/$owner/packages/nuget/$package_name/versions")
