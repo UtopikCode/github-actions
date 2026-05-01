@@ -225,7 +225,8 @@ jobs:
           encoded_name=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$name")
 
           get_version_id() {
-              curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" | python3 -c "import json,sys; payload=json.load(sys.stdin); name=sys.argv[1]; version=sys.argv[2]; payload = payload if isinstance(payload, list) else []; print(next((item.get('id') or '') for item in payload if (item.get('metadata', {}).get('package_name') or item.get('name')) == name and (item.get('metadata', {}).get('version') or item.get('metadata', {}).get('package_version')) == version), ''))" "$name" "$version"
+              curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" |
+                python3 -c "import json,sys; payload=json.load(sys.stdin); name=sys.argv[1]; version=sys.argv[2]; payload = payload if isinstance(payload, list) else []; print(next((item.get('id') or '') for item in payload if (item.get('metadata', {}).get('package_name') or item.get('name')) == name and (item.get('metadata', {}).get('version') or item.get('metadata', {}).get('package_version')) == version), ''))" "$name" "$version"
           }
 
           for scope in orgs users; do
