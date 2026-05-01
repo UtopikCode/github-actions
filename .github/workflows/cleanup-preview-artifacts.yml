@@ -15,10 +15,6 @@ on:
         description: 'The npm package name to delete.'
         required: true
         type: string
-      github-token:
-        description: 'GitHub token used to authenticate package deletion requests.'
-        required: true
-        type: string
       docker-tag-prefix:
         description: 'Prefix used for PR Docker tags.'
         required: false
@@ -54,7 +50,7 @@ jobs:
         with:
           docker-package: ${{ inputs.docker-package }}
           docker-tag-prefix: ${{ inputs.docker-tag-prefix }}
-          github-token: ${{ inputs.github-token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           npm-package: ${{ inputs.npm-package }}
           npm-version-prefix: ${{ inputs.npm-version-prefix }}
           nuget-package: ${{ inputs.nuget-package }}
