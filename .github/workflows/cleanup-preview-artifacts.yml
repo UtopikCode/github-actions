@@ -3,7 +3,7 @@ name: Cleanup preview artifacts
 on:
   workflow_call:
     inputs:
-      package-name:
+      docker-package:
         description: 'The GHCR container package name.'
         required: true
         type: string
@@ -52,10 +52,10 @@ jobs:
       - name: Cleanup preview artifacts
         uses: UtopikCode/github-actions/.github/actions/cleanup-preview-artifacts@main
         with:
-          package_name: ${{ inputs.package-name }}
-          nuget_package: ${{ inputs.nuget-package }}
-          npm_package: ${{ inputs.npm-package }}
-          github_token: ${{ inputs.github-token }}
-          docker_tag_prefix: ${{ inputs.docker-tag-prefix }}
-          nuget_version_prefix: ${{ inputs.nuget-version-prefix }}
-          npm_version_prefix: ${{ inputs.npm-version-prefix }}
+          docker-package: ${{ inputs.docker-package }}
+          docker-tag-prefix: ${{ inputs.docker-tag-prefix }}
+          github-token: ${{ inputs.github-token }}
+          npm-package: ${{ inputs.npm-package }}
+          npm-version-prefix: ${{ inputs.npm-version-prefix }}
+          nuget-package: ${{ inputs.nuget-package }}
+          nuget-version-prefix: ${{ inputs.nuget-version-prefix }}

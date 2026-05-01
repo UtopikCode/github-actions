@@ -99,7 +99,7 @@ jobs:
 
 ```yaml
 jobs:
-  upload_openapi:
+  publish_openapi:
     uses: UtopikCode/github-actions/.github/workflows/openapi-publish.yml@main
     with:
       openapi-dll: 'src/MyApi/bin/Release/net10/MyApi.dll'

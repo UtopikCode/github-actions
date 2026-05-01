@@ -3,27 +3,27 @@ name: Cleanup preview artifacts
 description: Delete preview Docker, NuGet, and npm package versions when a PR is closed.
 
 inputs:
-  package_name:
+  docker-package:
     description: 'The GHCR container package name.'
     required: true
-  nuget_package:
+  nuget-package:
     description: 'The NuGet package ID to delete.'
     required: true
-  npm_package:
+  npm-package:
     description: 'The npm package name to delete.'
     required: true
-  github_token:
+  github-token:
     description: 'GitHub token used to authenticate package deletion requests.'
     required: true
-  docker_tag_prefix:
+  docker-tag-prefix:
     description: 'Prefix used for PR Docker tags.'
     required: false
     default: '0.0.0-alpha.'
-  nuget_version_prefix:
+  nuget-version-prefix:
     description: 'Prefix used for preview NuGet package versions.'
     required: false
     default: '0.0.0-alpha.'
-  npm_version_prefix:
+  npm-version-prefix:
     description: 'Prefix used for preview npm package versions.'
     required: false
     default: '0.0.0-alpha.'
@@ -37,7 +37,7 @@ runs:
         set -euo pipefail
         PR_TAG="${INPUT_DOCKER_TAG_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
         OWNER="${GITHUB_REPOSITORY_OWNER}"
-        PACKAGE_NAME="${INPUT_PACKAGE_NAME}"
+        PACKAGE_NAME="${INPUT_DOCKER_PACKAGE}"
         TOKEN="${INPUT_GITHUB_TOKEN}"
 
         for SCOPE in orgs users; do
