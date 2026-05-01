@@ -105,6 +105,14 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Checkout workflow repository
+        uses: actions/checkout@v6
+        with:
+          repository: UtopikCode/github-actions
+          path: workflow-repo
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Set up .NET and authenticate GitHub Packages
         uses: UtopikCode/github-actions/.github/actions/dotnet-setup@main
         with:
@@ -149,7 +157,7 @@ jobs:
               owner=${{ github.repository_owner }}
               get_version_id() {
                 curl -sS -H "Authorization: Bearer $NUGET_API_KEY" -H "Accept: application/vnd.github+json" "$1" \
-                  | python3 "$GITHUB_WORKSPACE/.github/scripts/get_nuget_version_id.py" "$version"
+                  | python3 "$GITHUB_WORKSPACE/workflow-repo/.github/scripts/get_nuget_version_id.py" "$version"
               }
 
               pkg_version_id=$(get_version_id "https://api.github.com/orgs/$owner/packages/nuget/$package_name/versions")
