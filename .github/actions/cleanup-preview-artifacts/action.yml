@@ -33,12 +33,14 @@ runs:
   steps:
     - name: Delete PR Docker image from GHCR
       shell: bash
+      env:
+        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
       run: |
         set -euo pipefail
-        PR_TAG="${INPUT_DOCKER_TAG_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+        PR_TAG="${{ inputs.docker-tag-prefix }}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
         OWNER="${GITHUB_REPOSITORY_OWNER}"
-        PACKAGE_NAME="${INPUT_DOCKER_PACKAGE}"
-        TOKEN="${INPUT_GITHUB_TOKEN}"
+        PACKAGE_NAME="${{ inputs.docker-package }}"
+        TOKEN="${{ inputs.github-token }}"
 
         for SCOPE in orgs users; do
           URL="https://api.github.com/${SCOPE}/${OWNER}/packages/container/${PACKAGE_NAME}/versions"
@@ -55,17 +57,17 @@ runs:
             curl -sSL -X DELETE -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}/${ID}"
           done
         done
-      env:
-        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
 
     - name: Delete PR NuGet package version
       shell: bash
+      env:
+        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
       run: |
         set -euo pipefail
-        VERSION="${INPUT_NUGET_VERSION_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
-        PACKAGE="${INPUT_NUGET_PACKAGE}"
+        VERSION="${{ inputs.nuget-version-prefix }}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+        PACKAGE="${{ inputs.nuget-package }}"
         OWNER="${GITHUB_REPOSITORY_OWNER}"
-        TOKEN="${INPUT_GITHUB_TOKEN}"
+        TOKEN="${{ inputs.github-token }}"
 
         for SCOPE in orgs users; do
           URL="https://api.github.com/${SCOPE}/${OWNER}/packages/nuget/${PACKAGE}/versions"
@@ -82,17 +84,17 @@ runs:
             curl -sSL -X DELETE -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}/${ID}"
           done
         done
-      env:
-        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
 
     - name: Delete PR npm package version
       shell: bash
+      env:
+        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
       run: |
         set -euo pipefail
-        VERSION="${INPUT_NPM_VERSION_PREFIX}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
-        PACKAGE="${INPUT_NPM_PACKAGE}"
+        VERSION="${{ inputs.npm-version-prefix }}${GITHUB_EVENT_PULL_REQUEST_NUMBER}"
+        PACKAGE="${{ inputs.npm-package }}"
         OWNER="${GITHUB_REPOSITORY_OWNER}"
-        TOKEN="${INPUT_GITHUB_TOKEN}"
+        TOKEN="${{ inputs.github-token }}"
 
         for SCOPE in orgs users; do
           URL="https://api.github.com/${SCOPE}/${OWNER}/packages/npm/${PACKAGE}/versions"
@@ -109,5 +111,3 @@ runs:
             curl -sSL -X DELETE -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" "${URL}/${ID}"
           done
         done
-      env:
-        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
