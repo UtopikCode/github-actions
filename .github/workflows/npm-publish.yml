@@ -225,23 +225,8 @@ jobs:
           encoded_name=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$name")
 
           get_version_id() {
-              curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" | python3 - <<'PY'
-import json, sys
-payload = json.load(sys.stdin)
-name = sys.argv[1]
-version = sys.argv[2]
-if not isinstance(payload, list):
-    payload = []
-result = ''
-for item in payload:
-    metadata = item.get('metadata', {})
-    pkg_name = metadata.get('package_name') or item.get('name')
-    pkg_version = metadata.get('version') or metadata.get('package_version')
-    if pkg_name == name and pkg_version == version:
-        result = item.get('id') or ''
-        break
-print(result)
-PY
+              curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" |
+                python3 .github/scripts/get_npm_version_id.py "$name" "$version"
           }
 
           for scope in orgs users; do
