@@ -214,10 +214,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
+          PACKAGE_VERSION: ${{ inputs.package-version }}
         run: |
           cd "$PUBLISH_DIR"
           name=$(node -p "require('./package.json').name")
-          version=$(node -p "require('./package.json').version")
+          version="$PACKAGE_VERSION"
+          if [ -z "$version" ]; then
+            version=$(node -p "require('./package.json').version")
+          fi
           encoded_name=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$name")
           bare_name=$(python3 -c "import sys; pkg=sys.argv[1]; print(pkg.split('/', 1)[1] if pkg.startswith('@') and '/' in pkg else pkg)" "$name")
           bare_name_encoded=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$bare_name")
