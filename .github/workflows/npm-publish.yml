@@ -219,6 +219,13 @@ jobs:
           name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
           encoded_name=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$name")
+          bare_name=$(python3 -c "import sys; pkg=sys.argv[1]; print(pkg.split('/', 1)[1] if pkg.startswith('@') and '/' in pkg else pkg)" "$name")
+          bare_name_encoded=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$bare_name")
+
+          package_paths=("$encoded_name")
+          if [ "$bare_name_encoded" != "$encoded_name" ]; then
+            package_paths+=("$bare_name_encoded")
+          fi
 
           get_version_id() {
               response=$(mktemp)
@@ -236,21 +243,23 @@ jobs:
           }
 
           found=0
-          for scope in orgs users; do
-            url="https://api.github.com/$scope/$OWNER/packages/npm/$encoded_name/versions"
-            version_id=$(get_version_id "$url")
-            if [ -n "$version_id" ]; then
-              echo "Deleting existing npm package version $name@$version from $scope/$OWNER (id=$version_id)"
-              delete_response=$(mktemp)
-              delete_code=$(curl -sS -w '%{http_code}' -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$url/$version_id" -o "$delete_response")
-              echo "DELETE $url/$version_id returned $delete_code" >&2
-              cat "$delete_response" >&2
-              rm -f "$delete_response"
-              found=1
-              break
-            else
-              echo "No version id found for $name@$version at $url" >&2
-            fi
+          for package_path in "${package_paths[@]}"; do
+            package_urls=("https://api.github.com/repos/$OWNER/${GITHUB_REPOSITORY#*/}/packages/npm/$package_path/versions" "https://api.github.com/orgs/$OWNER/packages/npm/$package_path/versions" "https://api.github.com/users/$OWNER/packages/npm/$package_path/versions")
+            for url in "${package_urls[@]}"; do
+              version_id=$(get_version_id "$url")
+              if [ -n "$version_id" ]; then
+                echo "Deleting existing npm package version $name@$version from $url (id=$version_id) using package path $package_path"
+                delete_response=$(mktemp)
+                delete_code=$(curl -sS -w '%{http_code}' -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$url/$version_id" -o "$delete_response")
+                echo "DELETE $url/$version_id returned $delete_code" >&2
+                cat "$delete_response" >&2
+                rm -f "$delete_response"
+                found=1
+                break 2
+              else
+                echo "No version id found for $name@$version at $url" >&2
+              fi
+            done
           done
           if [ "$found" -eq 0 ]; then
             echo "No existing npm package version found to delete for $name@$version" >&2
