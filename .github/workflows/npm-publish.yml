@@ -63,11 +63,6 @@ on:
         required: false
         type: string
         default: 'v1'
-      openapi-upload-artifact:
-        description: 'Upload generated OpenAPI JSON as a temporary artifact.'
-        required: false
-        type: boolean
-        default: true
       package-dir:
         description: 'Directory containing package.json.'
         required: false
@@ -152,15 +147,6 @@ jobs:
           openapi-tool-version: ${{ inputs.openapi-tool-version }}
           openapi-version: ${{ inputs.openapi-version }}
 
-      # - name: Stage generated OpenAPI spec for upload
-      #   if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
-      #   uses: actions/upload-artifact@v7.0.1
-      #   with:
-      #     name: openapi-spec-temp
-      #     path: ${{ inputs.openapi-output }}
-      #     if-no-files-found: warn
-      #     overwrite: true
-
       - name: Determine publish directory
         run: |
           publish_dir="${{ inputs.package-dir }}"
@@ -235,19 +221,40 @@ jobs:
           encoded_name=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$name")
 
           get_version_id() {
-              curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" |
-                python3 "$GITHUB_WORKSPACE/workflow-repo/.github/scripts/get_npm_version_id.py" "$name" "$version"
+              response=$(mktemp)
+              http_code=$(curl -sS -w '%{http_code}' -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" -o "$response")
+              echo "API GET $1 returned $http_code" >&2
+              if [ "$http_code" != "200" ]; then
+                echo "Response body:" >&2
+                cat "$response" >&2
+                rm -f "$response"
+                return 0
+              fi
+              version_id=$(python3 "$GITHUB_WORKSPACE/workflow-repo/.github/scripts/get_npm_version_id.py" "$name" "$version" < "$response")
+              rm -f "$response"
+              echo "$version_id"
           }
 
+          found=0
           for scope in orgs users; do
             url="https://api.github.com/$scope/$OWNER/packages/npm/$encoded_name/versions"
             version_id=$(get_version_id "$url")
             if [ -n "$version_id" ]; then
-              echo "Deleting existing npm package version $name@$version from $scope/$OWNER"
-              curl -sS -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$url/$version_id"
+              echo "Deleting existing npm package version $name@$version from $scope/$OWNER (id=$version_id)"
+              delete_response=$(mktemp)
+              delete_code=$(curl -sS -w '%{http_code}' -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$url/$version_id" -o "$delete_response")
+              echo "DELETE $url/$version_id returned $delete_code" >&2
+              cat "$delete_response" >&2
+              rm -f "$delete_response"
+              found=1
               break
+            else
+              echo "No version id found for $name@$version at $url" >&2
             fi
           done
+          if [ "$found" -eq 0 ]; then
+            echo "No existing npm package version found to delete for $name@$version" >&2
+          fi
 
       - name: Install package dependencies
         run: |

@@ -18,13 +18,32 @@ def main() -> int:
     except json.JSONDecodeError:
         return 1
 
-    if not isinstance(payload, list):
-        payload = []
+    items = []
+    if isinstance(payload, list):
+        items = payload
+    elif isinstance(payload, dict):
+        if isinstance(payload.get("package_versions"), list):
+            items = payload["package_versions"]
+        elif isinstance(payload.get("data"), list):
+            items = payload["data"]
+        elif isinstance(payload.get("versions"), list):
+            items = payload["versions"]
+        else:
+            items = []
 
-    for item in payload:
+    for item in items:
         metadata = item.get("metadata", {}) or {}
-        pkg_name = metadata.get("package_name") or item.get("name")
-        pkg_version = metadata.get("version") or metadata.get("package_version")
+        pkg_name = (
+            metadata.get("package_name")
+            or item.get("name")
+            or item.get("package_name")
+        )
+        pkg_version = (
+            metadata.get("version")
+            or metadata.get("package_version")
+            or item.get("version")
+            or item.get("package_version")
+        )
         if pkg_name == args.name and pkg_version == args.version:
             print(item.get("id") or "")
             return 0
