@@ -102,14 +102,14 @@ jobs:
   publish_openapi:
     uses: UtopikCode/github-actions/.github/workflows/openapi-publish.yml@main
     with:
+      dotnet-version: '10.0'
       openapi-dll: 'src/MyApi/bin/Release/net10/MyApi.dll'
       openapi-output: 'openapi.json'
       openapi-upload-artifact: true
       openapi-upload-artifact-name: 'openapi-spec'
-      openapi-temp-artifact: 'openapi-spec-temp'
 ```
 
-This workflow is intended for use after another job generates an OpenAPI JSON file and uploads it as a temporary artifact.
+This workflow generates the OpenAPI JSON from the provided compiled DLL and uploads it as a workflow artifact. If you want the workflow to build the DLL from source, also pass `openapi-project` alongside `openapi-dll`.
 
 For npmjs.org, pass a registry URL and an npm token instead:
 

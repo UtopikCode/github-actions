@@ -59,11 +59,13 @@ runs:
       run: dotnet build ${{ inputs.openapi-project }} --configuration Release --no-restore
 
     - name: Install OpenAPI tooling
-      if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+      if: ${{ inputs.openapi-dll != '' }}
       shell: bash
       run: |
         dotnet tool install --tool-path .tools Swashbuckle.AspNetCore.Cli --version ${{ inputs.openapi-tool-version }}
-        dotnet tool install --tool-path .tools microsoft.openapi.kiota --version ${{ inputs.kiota-version }}
+        if [ "${{ inputs.kiota-output }}" != '' ]; then
+          dotnet tool install --tool-path .tools microsoft.openapi.kiota --version ${{ inputs.kiota-version }}
+        fi
 
     - name: Generate OpenAPI spec from compiled DLL
       if: ${{ inputs.openapi-dll != '' }}
@@ -116,4 +118,3 @@ runs:
           exit 1
         fi
         echo "Kiota output contains $file_count files"
-

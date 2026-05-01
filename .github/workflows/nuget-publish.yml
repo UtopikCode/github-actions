@@ -53,6 +53,11 @@ on:
         required: false
         type: string
         default: 'v1'
+      openapi-upload-artifact:
+        description: 'Upload generated OpenAPI JSON as a temporary artifact.'
+        required: false
+        type: boolean
+        default: true
       package-project:
         description: 'Project file path.'
         required: false
@@ -123,14 +128,14 @@ jobs:
           openapi-tool-version: ${{ inputs.openapi-tool-version }}
           openapi-version: ${{ inputs.openapi-version }}
 
-      - name: Stage generated OpenAPI spec for upload
-        if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: openapi-spec-temp
-          path: ${{ inputs.openapi-output }}
-          if-no-files-found: warn
-          overwrite: true
+      # - name: Stage generated OpenAPI spec for upload
+      #   if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
+      #   uses: actions/upload-artifact@v7.0.1
+      #   with:
+      #     name: openapi-spec-temp
+      #     path: ${{ inputs.openapi-output }}
+      #     if-no-files-found: warn
+      #     overwrite: true
 
       - name: Restore project
         run: dotnet restore ${{ inputs.package-project }}
