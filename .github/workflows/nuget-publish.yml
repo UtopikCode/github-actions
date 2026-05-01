@@ -3,36 +3,31 @@ name: Publish artifacts
 on:
   workflow_call:
     inputs:
-      publish:
-        description: 'Publish package.'
-        required: false
-        type: boolean
-        default: true
-      publish-overwrite:
-        description: 'Delete existing package version before publishing so same version can be republished.'
-        required: false
-        type: boolean
-        default: false
-      package-project:
-        description: 'Project file path.'
-        required: false
-        type: string
-        default: ''
-      package-version:
-        description: 'Package version to apply when packing.'
-        required: false
-        type: string
-        default: ''
       dotnet-version:
         description: '.NET SDK version.'
         required: false
         type: string
         default: '10.0'
-      openapi-project:
-        description: 'Project file used to build the OpenAPI DLL.'
+      kiota-class-name:
+        description: 'Generated Kiota client class name.'
         required: false
         type: string
         default: ''
+      kiota-namespace:
+        description: 'Generated Kiota namespace.'
+        required: false
+        type: string
+        default: ''
+      kiota-output:
+        description: 'Generated Kiota output folder.'
+        required: false
+        type: string
+        default: ''
+      kiota-version:
+        description: 'Kiota generator version.'
+        required: false
+        type: string
+        default: '1.31.1'
       openapi-dll:
         description: 'Compiled OpenAPI DLL path.'
         required: false
@@ -43,23 +38,8 @@ on:
         required: false
         type: string
         default: 'openapi.json'
-      openapi-version:
-        description: 'OpenAPI document version / route.'
-        required: false
-        type: string
-        default: 'v1'
-      kiota-output:
-        description: 'Generated Kiota output folder.'
-        required: false
-        type: string
-        default: ''
-      kiota-namespace:
-        description: 'Generated Kiota namespace.'
-        required: false
-        type: string
-        default: ''
-      kiota-class-name:
-        description: 'Generated Kiota client class name.'
+      openapi-project:
+        description: 'Project file used to build the OpenAPI DLL.'
         required: false
         type: string
         default: ''
@@ -68,11 +48,6 @@ on:
         required: false
         type: string
         default: '10.1.7'
-      kiota-version:
-        description: 'Kiota generator version.'
-        required: false
-        type: string
-        default: '1.31.1'
       openapi-upload-artifact:
         description: 'Upload generated OpenAPI JSON as a workflow artifact.'
         required: false
@@ -83,6 +58,36 @@ on:
         required: false
         type: string
         default: 'openapi-spec'
+      openapi-version:
+        description: 'OpenAPI document version / route.'
+        required: false
+        type: string
+        default: 'v1'
+      package-project:
+        description: 'Project file path.'
+        required: false
+        type: string
+        default: ''
+      package-registry:
+        description: 'NuGet registry URL.'
+        required: false
+        type: string
+        default: 'https://nuget.pkg.github.com/'
+      package-version:
+        description: 'Package version to apply when packing.'
+        required: false
+        type: string
+        default: ''
+      publish:
+        description: 'Publish package.'
+        required: false
+        type: boolean
+        default: true
+      publish-overwrite:
+        description: 'Delete existing package version before publishing so same version can be republished.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -109,18 +114,18 @@ jobs:
       - name: Generate OpenAPI client
         uses: UtopikCode/github-actions/.github/actions/openapi-kiota@main
         with:
-          openapi-project: ${{ inputs.openapi-project }}
-          openapi-dll: ${{ inputs.openapi-dll }}
-          openapi-output: ${{ inputs.openapi-output }}
-          openapi-version: ${{ inputs.openapi-version }}
-          kiota-output: ${{ inputs.kiota-output }}
-          kiota-namespace: ${{ inputs.kiota-namespace }}
           kiota-class-name: ${{ inputs.kiota-class-name }}
           kiota-language: 'CSharp'
-          openapi-tool-version: ${{ inputs.openapi-tool-version }}
+          kiota-namespace: ${{ inputs.kiota-namespace }}
+          kiota-output: ${{ inputs.kiota-output }}
           kiota-version: ${{ inputs.kiota-version }}
-          openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
+          openapi-dll: ${{ inputs.openapi-dll }}
+          openapi-output: ${{ inputs.openapi-output }}
+          openapi-project: ${{ inputs.openapi-project }}
+          openapi-tool-version: ${{ inputs.openapi-tool-version }}
           openapi-upload-artifact-name: ${{ inputs.openapi-upload-artifact-name }}
+          openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
+          openapi-version: ${{ inputs.openapi-version }}
 
       - name: Restore project
         run: dotnet restore ${{ inputs.package-project }}
@@ -162,8 +167,13 @@ jobs:
               fi
             fi
 
+            SOURCE="GitHubPackages"
+            if [ "${{ inputs.package-registry }}" != 'https://nuget.pkg.github.com/' ]; then
+              SOURCE="${{ inputs.package-registry }}"
+            fi
+
             dotnet nuget push "$pkg" \
-              --source "GitHubPackages" \
+              --source "$SOURCE" \
               --api-key "$NUGET_API_KEY" \
               --skip-duplicate
           done

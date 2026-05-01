@@ -3,41 +3,6 @@ name: Publish npm artifacts
 on:
   workflow_call:
     inputs:
-      publish:
-        description: 'Publish package.'
-        required: false
-        type: boolean
-        default: true
-      publish-overwrite:
-        description: 'Delete existing package version before publishing so same version can be republished.'
-        required: false
-        type: boolean
-        default: false
-      package-dir:
-        description: 'Directory containing package.json.'
-        required: false
-        type: string
-        default: '.'
-      package-version:
-        description: 'Package version to apply before publishing.'
-        required: false
-        type: string
-        default: ''
-      tag:
-        description: 'dist-tag to publish under.'
-        required: false
-        type: string
-        default: 'latest'
-      node-version:
-        description: 'Node.js version.'
-        required: false
-        type: string
-        default: '20'
-      registry:
-        description: 'Registry URL.'
-        required: false
-        type: string
-        default: 'https://npm.pkg.github.com/'
       access:
         description: 'Publish access mode (public or restricted).'
         required: false
@@ -48,11 +13,31 @@ on:
         required: false
         type: string
         default: ''
-      openapi-project:
-        description: 'Project file used to build the OpenAPI DLL.'
+      kiota-class-name:
+        description: 'Generated Kiota client class name.'
         required: false
         type: string
         default: ''
+      kiota-namespace:
+        description: 'Generated Kiota namespace.'
+        required: false
+        type: string
+        default: ''
+      kiota-output:
+        description: 'Generated Kiota output folder.'
+        required: false
+        type: string
+        default: ''
+      kiota-version:
+        description: 'Kiota generator version.'
+        required: false
+        type: string
+        default: '1.31.1'
+      node-version:
+        description: 'Node.js version.'
+        required: false
+        type: string
+        default: '20'
       openapi-dll:
         description: 'Compiled OpenAPI DLL path.'
         required: false
@@ -63,23 +48,8 @@ on:
         required: false
         type: string
         default: 'openapi.json'
-      openapi-version:
-        description: 'OpenAPI document version / route.'
-        required: false
-        type: string
-        default: 'v1'
-      kiota-output:
-        description: 'Generated Kiota output folder.'
-        required: false
-        type: string
-        default: ''
-      kiota-namespace:
-        description: 'Generated Kiota namespace.'
-        required: false
-        type: string
-        default: ''
-      kiota-class-name:
-        description: 'Generated Kiota client class name.'
+      openapi-project:
+        description: 'Project file used to build the OpenAPI DLL.'
         required: false
         type: string
         default: ''
@@ -88,11 +58,6 @@ on:
         required: false
         type: string
         default: '10.1.7'
-      kiota-version:
-        description: 'Kiota generator version.'
-        required: false
-        type: string
-        default: '1.31.1'
       openapi-upload-artifact:
         description: 'Upload generated OpenAPI JSON as a workflow artifact.'
         required: false
@@ -103,6 +68,41 @@ on:
         required: false
         type: string
         default: 'openapi-spec'
+      openapi-version:
+        description: 'OpenAPI document version / route.'
+        required: false
+        type: string
+        default: 'v1'
+      package-dir:
+        description: 'Directory containing package.json.'
+        required: false
+        type: string
+        default: '.'
+      package-registry:
+        description: 'Registry URL.'
+        required: false
+        type: string
+        default: 'https://npm.pkg.github.com/'
+      package-version:
+        description: 'Package version to apply before publishing.'
+        required: false
+        type: string
+        default: ''
+      publish:
+        description: 'Publish package.'
+        required: false
+        type: boolean
+        default: true
+      publish-overwrite:
+        description: 'Delete existing package version before publishing so same version can be republished.'
+        required: false
+        type: boolean
+        default: false
+      publish-tag:
+        description: 'dist-tag to publish under.'
+        required: false
+        type: string
+        default: 'latest'
 
 permissions:
   contents: read
@@ -124,7 +124,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: ${{ inputs.node-version }}
-          registry-url: ${{ inputs.registry }}
+          registry-url: ${{ inputs.package-registry }}
           always-auth: true
         env:
           NODE_AUTH_TOKEN: ${{ inputs.auth-token != '' && inputs.auth-token || secrets.GITHUB_TOKEN }}
@@ -138,18 +138,18 @@ jobs:
       - name: Generate OpenAPI client
         uses: UtopikCode/github-actions/.github/actions/openapi-kiota@main
         with:
-          openapi-project: ${{ inputs.openapi-project }}
-          openapi-dll: ${{ inputs.openapi-dll }}
-          openapi-output: ${{ inputs.openapi-output }}
-          openapi-version: ${{ inputs.openapi-version }}
-          kiota-output: ${{ inputs.kiota-output }}
-          kiota-namespace: ${{ inputs.kiota-namespace }}
           kiota-class-name: ${{ inputs.kiota-class-name }}
           kiota-language: 'TypeScript'
-          openapi-tool-version: ${{ inputs.openapi-tool-version }}
+          kiota-namespace: ${{ inputs.kiota-namespace }}
+          kiota-output: ${{ inputs.kiota-output }}
           kiota-version: ${{ inputs.kiota-version }}
-          openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
+          openapi-dll: ${{ inputs.openapi-dll }}
+          openapi-output: ${{ inputs.openapi-output }}
+          openapi-project: ${{ inputs.openapi-project }}
+          openapi-tool-version: ${{ inputs.openapi-tool-version }}
           openapi-upload-artifact-name: ${{ inputs.openapi-upload-artifact-name }}
+          openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
+          openapi-version: ${{ inputs.openapi-version }}
 
       - name: Determine publish directory
         run: |
@@ -275,7 +275,7 @@ jobs:
           if [ "${{ inputs.npm-access }}" = 'public' ]; then
             access='--access public'
           fi
-          npm publish . --tag "${{ inputs.npm-tag }}" --registry "${{ inputs.registry }}" $access
+          npm publish . --tag "${{ inputs.publish-tag }}" --registry "${{ inputs.package-registry }}" $access
 
       - name: Upload generated OpenAPI spec
         if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
