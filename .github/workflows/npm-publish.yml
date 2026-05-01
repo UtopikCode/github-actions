@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: true
+      publish-overwrite:
+        description: 'Delete existing package version before publishing so same version can be republished.'
+        required: false
+        type: boolean
+        default: false
       package-dir:
         description: 'Directory containing package.json.'
         required: false
@@ -43,11 +48,6 @@ on:
         required: false
         type: string
         default: ''
-      overwrite:
-        description: 'Delete existing package version before publishing so same version can be republished.'
-        required: false
-        type: boolean
-        default: false
       openapi-project:
         description: 'Project file used to build the OpenAPI DLL.'
         required: false
@@ -214,7 +214,7 @@ jobs:
           fi
 
       - name: Delete existing npm package version
-        if: ${{ inputs.overwrite }}
+        if: ${{ inputs.publish-overwrite }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}

@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: true
+      publish-overwrite:
+        description: 'Delete existing package version before publishing so same version can be republished.'
+        required: false
+        type: boolean
+        default: false
       package-project:
         description: 'Project file path.'
         required: false
@@ -78,11 +83,6 @@ on:
         required: false
         type: string
         default: 'openapi-spec'
-      overwrite:
-        description: 'Delete existing package version before publishing so same version can be republished.'
-        required: false
-        type: boolean
-        default: true
 
 permissions:
   contents: read
@@ -136,7 +136,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for pkg in ./artifacts/*.nupkg; do
-            if [ "${{ inputs.overwrite }}" = 'true' ]; then
+            if [ "${{ inputs.publish-overwrite }}" = 'true' ]; then
               id=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<id>)[^<]+' | head -n 1)
               version=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<version>)[^<]+' | head -n 1)
               echo "Deleting existing package $id version $version if it already exists on GitHub Packages..."
