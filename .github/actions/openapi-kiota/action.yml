@@ -107,6 +107,24 @@ runs:
           mv "$BACKUP_DIR"/* "$OUTPUT_DIR" 2>/dev/null || true
         fi
 
+    - name: Validate Kiota output
+      if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
+      shell: bash
+      run: |
+        OUTPUT_DIR="${{ inputs.kiota-output }}"
+        if [ ! -d "$OUTPUT_DIR" ]; then
+          echo "ERROR: Kiota output directory not found: $OUTPUT_DIR"
+          exit 1
+        fi
+        file_count=$(find "$OUTPUT_DIR" -maxdepth 2 -type f | wc -l)
+        if [ "$file_count" -eq 0 ]; then
+          echo "ERROR: Kiota output folder is empty: $OUTPUT_DIR"
+          echo "Check that Kiota generated files and that the OpenAPI source is valid."
+          find "$OUTPUT_DIR" -maxdepth 2 | sort
+          exit 1
+        fi
+        echo "Kiota output contains $file_count files"
+
     - name: Upload generated OpenAPI spec
       if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
       uses: actions/upload-artifact@v7.0.1

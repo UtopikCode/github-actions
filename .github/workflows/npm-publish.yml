@@ -186,9 +186,25 @@ jobs:
               "license": "MIT"
             }
           EOF
+          echo "Created package.json in $PUBLISH_DIR"
+
+      - name: Validate npm publish directory
+        run: |
+          cd "$PUBLISH_DIR"
+          if [ ! -f package.json ]; then
             echo "ERROR: package.json not found in $PUBLISH_DIR"
             echo "Ensure the publish directory contains a valid npm package manifest."
             echo "If you are generating a TypeScript client with Kiota, set package-dir to an existing package folder or add a package.json to the generated output."
+            exit 1
+          fi
+          file_count=$(find . -maxdepth 2 -type f ! -name 'package.json' ! -name 'README.md' ! -name 'README' ! -name '.npmignore' ! -name 'package-lock.json' | wc -l)
+          if [ "$file_count" -eq 0 ]; then
+            echo "ERROR: npm package directory appears empty in $PUBLISH_DIR"
+            echo "The directory contains package.json but no package files were found."
+            echo "If you are generating a TypeScript client, ensure Kiota output files are present in the publish directory."
+            echo
+            echo "Publish directory contents:"
+            find . -maxdepth 2 | sort
             exit 1
           fi
 
