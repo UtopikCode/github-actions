@@ -48,16 +48,6 @@ on:
         required: false
         type: string
         default: '10.1.7'
-      openapi-upload-artifact:
-        description: 'Upload generated OpenAPI JSON as a workflow artifact.'
-        required: false
-        type: boolean
-        default: true
-      openapi-upload-artifact-name:
-        description: 'Artifact name for the generated OpenAPI JSON file.'
-        required: false
-        type: string
-        default: 'openapi-spec'
       openapi-version:
         description: 'OpenAPI document version / route.'
         required: false
@@ -131,9 +121,16 @@ jobs:
           openapi-output: ${{ inputs.openapi-output }}
           openapi-project: ${{ inputs.openapi-project }}
           openapi-tool-version: ${{ inputs.openapi-tool-version }}
-          openapi-upload-artifact-name: ${{ inputs.openapi-upload-artifact-name }}
-          openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
           openapi-version: ${{ inputs.openapi-version }}
+
+      - name: Stage generated OpenAPI spec for upload
+        if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: openapi-spec-temp
+          path: ${{ inputs.openapi-output }}
+          if-no-files-found: warn
+          overwrite: true
 
       - name: Restore project
         run: dotnet restore ${{ inputs.package-project }}
@@ -185,10 +182,3 @@ jobs:
               --api-key "$NUGET_API_KEY" \
               --skip-duplicate
           done
-
-      - name: Upload generated OpenAPI spec
-        if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: ${{ inputs.openapi-upload-artifact-name }}
-          path: ${{ inputs.openapi-output }}

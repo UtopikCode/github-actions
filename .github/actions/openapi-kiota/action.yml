@@ -44,14 +44,6 @@ inputs:
     description: 'Kiota generator version.'
     required: false
     default: '1.31.1'
-  openapi-upload-artifact:
-    description: 'Upload generated OpenAPI JSON as a workflow artifact.'
-    required: false
-    default: true
-  openapi-upload-artifact-name:
-    description: 'Artifact name for the generated OpenAPI JSON file.'
-    required: false
-    default: 'openapi-spec'
 
 runs:
   using: composite
@@ -125,9 +117,3 @@ runs:
         fi
         echo "Kiota output contains $file_count files"
 
-    - name: Upload generated OpenAPI spec
-      if: ${{ inputs.openapi-upload-artifact && inputs.openapi-dll != '' }}
-      uses: actions/upload-artifact@v7.0.1
-      with:
-        name: ${{ inputs.openapi-upload-artifact-name }}
-        path: ${{ inputs.openapi-output }}

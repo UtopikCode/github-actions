@@ -14,6 +14,8 @@ A reusable GitHub Actions repository for .NET, Docker, NuGet, and preview cleanu
   - Reusable NuGet package publish workflow with optional OpenAPI/Kiota generation.
 - `.github/workflows/npm-publish.yml`
   - Reusable npm package publish workflow for TypeScript/JavaScript packages.
+- `.github/workflows/openapi-publish.yml`
+  - Reusable workflow to upload a generated OpenAPI JSON spec artifact from another job.
 - `.github/actions/openapi-kiota`
   - Composite action to generate an OpenAPI document and create a Kiota client for C# or TypeScript.
 - `.github/actions/dotnet-setup`
@@ -92,6 +94,22 @@ jobs:
       npm-auth-token: ${{ secrets.GITHUB_TOKEN }}
       overwrite: true
 ```
+
+### Upload generated OpenAPI spec
+
+```yaml
+jobs:
+  upload_openapi:
+    uses: UtopikCode/github-actions/.github/workflows/openapi-publish.yml@main
+    with:
+      openapi-dll: 'src/MyApi/bin/Release/net10/MyApi.dll'
+      openapi-output: 'openapi.json'
+      openapi-upload-artifact: true
+      openapi-upload-artifact-name: 'openapi-spec'
+      openapi-temp-artifact: 'openapi-spec-temp'
+```
+
+This workflow is intended for use after another job generates an OpenAPI JSON file and uploads it as a temporary artifact.
 
 For npmjs.org, pass a registry URL and an npm token instead:
 
