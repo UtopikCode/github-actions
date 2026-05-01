@@ -31,20 +31,35 @@ def main() -> int:
         else:
             items = []
 
+    def normalize_package_name(package_name: str) -> str:
+        if package_name.startswith("@") and "/" in package_name:
+            return package_name.split("/", 1)[1]
+        return package_name
+
+    normalized_args_name = normalize_package_name(args.name)
+
     for item in items:
         metadata = item.get("metadata", {}) or {}
-        pkg_name = (
-            metadata.get("package_name")
-            or item.get("name")
-            or item.get("package_name")
-        )
-        pkg_version = (
+        item_pkg_name = metadata.get("package_name") or item.get("package_name")
+        item_pkg_version = (
             metadata.get("version")
             or metadata.get("package_version")
             or item.get("version")
             or item.get("package_version")
+            or item.get("name")
         )
-        if pkg_name == args.name and pkg_version == args.version:
+
+        version_match = item_pkg_version == args.version
+        if item_pkg_name is not None:
+            normalized_item_pkg_name = normalize_package_name(str(item_pkg_name))
+            name_match = (
+                item_pkg_name == args.name
+                or normalized_item_pkg_name == normalized_args_name
+            )
+            if name_match and version_match:
+                print(item.get("id") or "")
+                return 0
+        elif version_match:
             print(item.get("id") or "")
             return 0
 
