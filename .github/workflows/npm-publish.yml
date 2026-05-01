@@ -3,8 +3,8 @@ name: Publish npm artifacts
 on:
   workflow_call:
     inputs:
-      publish-npm:
-        description: 'Publish npm package.'
+      publish:
+        description: 'Publish package.'
         required: false
         type: boolean
         default: true
@@ -18,8 +18,8 @@ on:
         required: false
         type: string
         default: ''
-      npm-tag:
-        description: 'npm dist-tag to publish under.'
+      tag:
+        description: 'dist-tag to publish under.'
         required: false
         type: string
         default: 'latest'
@@ -29,20 +29,25 @@ on:
         type: string
         default: '20'
       registry:
-        description: 'npm registry URL.'
+        description: 'Registry URL.'
         required: false
         type: string
         default: 'https://npm.pkg.github.com/'
-      npm-access:
-        description: 'npm publish access mode (public or restricted).'
+      access:
+        description: 'Publish access mode (public or restricted).'
         required: false
         type: string
         default: 'public'
-      npm-auth-token:
-        description: 'Authentication token for the npm registry. If blank, the workflow uses the GitHub token for GitHub Packages.'
+      auth-token:
+        description: 'Authentication token for the registry. If blank, the workflow uses the GitHub token for GitHub Packages.'
         required: false
         type: string
         default: ''
+      overwrite:
+        description: 'Delete existing package version before publishing so same version can be republished.'
+        required: false
+        type: boolean
+        default: false
       openapi-project:
         description: 'Project file used to build the OpenAPI DLL.'
         required: false
@@ -104,9 +109,9 @@ permissions:
   packages: write
 
 jobs:
-  npm-package:
-    if: ${{ inputs.publish-npm }}
-    name: Build & Publish npm package
+  package:
+    if: ${{ inputs.publish }}
+    name: Build & Publish package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -122,7 +127,7 @@ jobs:
           registry-url: ${{ inputs.registry }}
           always-auth: true
         env:
-          NODE_AUTH_TOKEN: ${{ inputs.npm-auth-token != '' && inputs.npm-auth-token || secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ inputs.auth-token != '' && inputs.auth-token || secrets.GITHUB_TOKEN }}
 
       - name: Set up .NET and authenticate GitHub Packages
         uses: UtopikCode/github-actions/.github/actions/dotnet-setup@main
@@ -146,7 +151,7 @@ jobs:
           openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
           openapi-upload-artifact-name: ${{ inputs.openapi-upload-artifact-name }}
 
-      - name: Determine npm publish directory
+      - name: Determine publish directory
         run: |
           publish_dir="${{ inputs.package-dir }}"
           if [ "${{ inputs.kiota-output }}" != '' ] && [ "${{ inputs.package-dir }}" = '.' ]; then
@@ -188,12 +193,12 @@ jobs:
           EOF
           echo "Created package.json in $PUBLISH_DIR"
 
-      - name: Validate npm publish directory
+      - name: Validate publish directory
         run: |
           cd "$PUBLISH_DIR"
           if [ ! -f package.json ]; then
             echo "ERROR: package.json not found in $PUBLISH_DIR"
-            echo "Ensure the publish directory contains a valid npm package manifest."
+            echo "Ensure the publish directory contains a valid package manifest."
             echo "If you are generating a TypeScript client with Kiota, set package-dir to an existing package folder or add a package.json to the generated output."
             exit 1
           fi
@@ -207,6 +212,50 @@ jobs:
             find . -maxdepth 2 | sort
             exit 1
           fi
+
+      - name: Delete existing npm package version
+        if: ${{ inputs.overwrite }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          cd "$PUBLISH_DIR"
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          encoded_name=$(python3 - <<'PY'
+            import sys, urllib.parse
+            print(urllib.parse.quote(sys.argv[1], safe=''))
+            PY
+            "$name")
+
+          get_version_id() {
+            curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$1" | python3 - <<'PY'
+              import json,sys
+              payload=json.load(sys.stdin)
+              if not isinstance(payload, list):
+                  payload=[]
+              name=sys.argv[1]
+              version=sys.argv[2]
+              for item in payload:
+                  metadata=item.get('metadata', {})
+              pkg_name=metadata.get('package_name') or item.get('name')
+              pkg_version=metadata.get('version') or metadata.get('package_version')
+              if pkg_name == name and pkg_version == version:
+                  print(item.get('id') or '')
+                  break
+            PY
+            "$name" "$version"
+          }
+
+          for scope in orgs users; do
+            url="https://api.github.com/$scope/$OWNER/packages/npm/$encoded_name/versions"
+            version_id=$(get_version_id "$url")
+            if [ -n "$version_id" ]; then
+              echo "Deleting existing npm package version $name@$version from $scope/$OWNER"
+              curl -sS -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$url/$version_id"
+              break
+            fi
+          done
 
       - name: Install package dependencies
         run: |

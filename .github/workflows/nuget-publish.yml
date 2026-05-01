@@ -1,19 +1,19 @@
-name: Publish NuGet artifacts
+name: Publish artifacts
 
 on:
   workflow_call:
     inputs:
-      publish-nuget:
-        description: 'Publish NuGet package.'
+      publish:
+        description: 'Publish package.'
         required: false
         type: boolean
         default: true
-      nuget-project:
-        description: 'NuGet project file path.'
+      package-project:
+        description: 'Project file path.'
         required: false
         type: string
         default: ''
-      nuget-package-version:
+      package-version:
         description: 'Package version to apply when packing.'
         required: false
         type: string
@@ -78,20 +78,20 @@ on:
         required: false
         type: string
         default: 'openapi-spec'
-      nuget-overwrite:
+      overwrite:
         description: 'Delete existing package version before publishing so same version can be republished.'
         required: false
         type: boolean
         default: true
-        
+
 permissions:
   contents: read
   packages: write
 
 jobs:
-  nuget-package:
-    if: ${{ inputs.publish-nuget }}
-    name: Build & Publish NuGet package
+  package:
+    if: ${{ inputs.publish }}
+    name: Build & Publish package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -122,21 +122,21 @@ jobs:
           openapi-upload-artifact: ${{ inputs.openapi-upload-artifact }}
           openapi-upload-artifact-name: ${{ inputs.openapi-upload-artifact-name }}
 
-      - name: Restore NuGet project
-        run: dotnet restore ${{ inputs.nuget-project }}
+      - name: Restore project
+        run: dotnet restore ${{ inputs.package-project }}
 
-      - name: Pack NuGet package
+      - name: Pack package
         run: |
-          dotnet pack ${{ inputs.nuget-project }} \
+          dotnet pack ${{ inputs.package-project }} \
             --configuration Release \
-            --output ./artifacts /p:PackageVersion=${{ inputs.nuget-package-version }}
+            --output ./artifacts /p:PackageVersion=${{ inputs.package-version }}
 
-      - name: Publish NuGet package to GitHub Packages
+      - name: Publish package to GitHub Packages
         env:
           NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for pkg in ./artifacts/*.nupkg; do
-            if [ "${{ inputs.nuget-overwrite }}" = 'true' ]; then
+            if [ "${{ inputs.overwrite }}" = 'true' ]; then
               id=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<id>)[^<]+' | head -n 1)
               version=$(unzip -p "$pkg" '*.nuspec' | grep -oP '(?<=<version>)[^<]+' | head -n 1)
               echo "Deleting existing package $id version $version if it already exists on GitHub Packages..."

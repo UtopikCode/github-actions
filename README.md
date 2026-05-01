@@ -71,8 +71,8 @@ jobs:
     uses: UtopikCode/github-actions/.github/workflows/nuget-publish.yml@main
     with:
       publish-nuget: true
-      nuget-project: 'src/MyPackage/MyPackage.csproj'
-      nuget-package-version: '1.0.0'
+      package-project: 'src/MyPackage/MyPackage.csproj'
+      package-version: '1.0.0'
       dotnet-version: '10.0'
 ```
 
@@ -90,6 +90,7 @@ jobs:
       node-version: '20'
       registry: 'https://npm.pkg.github.com/'
       npm-auth-token: ${{ secrets.GITHUB_TOKEN }}
+      overwrite: true
 ```
 
 For npmjs.org, pass a registry URL and an npm token instead:
@@ -136,6 +137,8 @@ jobs:
 If `package-dir` is left as `'.'`, the workflow will publish from `kiota-output` when TypeScript client generation is enabled.
 
 The publish directory must contain a `package.json` file. If Kiota output does not include a manifest, point `package-dir` to a folder with an existing npm package manifest or add one to the generated output before publishing.
+
+For GitHub Packages, use the package scope that matches the repository owner/organization and ensure the publish token has access to that scope. If you want to republish the same version, set `overwrite: true`.
 
 ### Use the shared dotnet setup action
 
