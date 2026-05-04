@@ -68,6 +68,11 @@ on:
         required: false
         type: string
         default: '.'
+      package-name:
+        description: 'Package name to use for generated TypeScript client.'
+        required: false
+        type: string
+        default: ''
       package-registry:
         description: 'Registry URL.'
         required: false
@@ -171,9 +176,12 @@ jobs:
             PACKAGE_VERSION="0.1.0"
           fi
 
-          package_name=$(basename "$PUBLISH_DIR" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g')
+          package_name="${{ inputs.package-name }}"
           if [ -z "$package_name" ]; then
-            package_name="generated-client"
+            package_name=$(basename "$PUBLISH_DIR" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g')
+            if [ -z "$package_name" ]; then
+              package_name="generated-client"
+            fi
           fi
 
           cat > package.json <<EOF
@@ -183,7 +191,7 @@ jobs:
               "description": "Generated TypeScript client for ${KIOTA_NAMESPACE}",
               "main": "index.js",
               "types": "index.d.ts",
-              "files": ["."],
+              "files": ["**/*"],
               "license": "MIT"
             }
           EOF
@@ -198,14 +206,14 @@ jobs:
             echo "If you are generating a TypeScript client with Kiota, set package-dir to an existing package folder or add a package.json to the generated output."
             exit 1
           fi
-          file_count=$(find . -maxdepth 2 -type f ! -name 'package.json' ! -name 'README.md' ! -name 'README' ! -name '.npmignore' ! -name 'package-lock.json' | wc -l)
+          file_count=$(find . -type f ! -name 'package.json' ! -name 'README.md' ! -name 'README' ! -name '.npmignore' ! -name 'package-lock.json' | wc -l)
           if [ "$file_count" -eq 0 ]; then
             echo "ERROR: npm package directory appears empty in $PUBLISH_DIR"
             echo "The directory contains package.json but no package files were found."
             echo "If you are generating a TypeScript client, ensure Kiota output files are present in the publish directory."
             echo
             echo "Publish directory contents:"
-            find . -maxdepth 2 | sort
+            find . | sort
             exit 1
           fi
 

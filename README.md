@@ -145,6 +145,7 @@ jobs:
       openapi-dll: 'src/MyApi/bin/Release/net10/MyApi.dll'
       openapi-output: 'openapi.json'
       openapi-version: 'v1'
+      package-name: '@utopikcode/my-ts-client'
       kiota-output: 'packages/my-ts-client'
       kiota-namespace: 'MyApiClient'
       kiota-class-name: 'ApiClient'
