@@ -92,7 +92,7 @@ on:
         description: 'dist-tag to publish under.'
         required: false
         type: string
-        default: 'latest'
+        default: ''
 
 permissions:
   contents: read
@@ -276,4 +276,10 @@ jobs:
           if [ "${{ inputs.access }}" = 'public' ]; then
             access='--access public'
           fi
-          npm publish . --tag "${{ inputs.publish-tag }}" --registry "${{ inputs.package-registry }}" $access
+
+          tag_args=()
+          if [ "${{ inputs.publish-tag }}" != '' ]; then
+            tag_args=(--tag "${{ inputs.publish-tag }}")
+          fi
+
+          npm publish . "${tag_args[@]}" --registry "${{ inputs.package-registry }}" $access
