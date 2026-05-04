@@ -191,7 +191,7 @@ jobs:
               "description": "Generated TypeScript client for ${KIOTA_NAMESPACE}",
               "main": "index.js",
               "types": "index.d.ts",
-              "files": ["**/*"],
+              "files": ["*", "**/*"],
               "license": "MIT"
             }
           EOF
@@ -270,6 +270,17 @@ jobs:
         run: |
           cd "$PUBLISH_DIR"
           npm install --no-audit --prefer-offline
+
+      - name: Show npm package contents
+        run: |
+          cd "$PUBLISH_DIR"
+          echo "Package root contents:"
+          find . | sort
+          echo
+          echo "package.json contents:"
+          cat package.json
+          echo
+          npm pack --dry-run
 
       - name: Set package version
         if: ${{ inputs.package-version != '' }}
