@@ -217,6 +217,25 @@ jobs:
             exit 1
           fi
 
+      - name: Fix package.json files field for root-level generated clients
+        run: |
+          cd "$PUBLISH_DIR"
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const manifestPath = path.resolve('package.json');
+          const pkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          const desiredFiles = ['*', '**/*'];
+          const hasRootFiles = Array.isArray(pkg.files) && desiredFiles.some(f => pkg.files.includes(f));
+          if (!hasRootFiles) {
+            pkg.files = desiredFiles;
+            fs.writeFileSync(manifestPath, JSON.stringify(pkg, null, 2) + '\n');
+            console.log('Updated package.json files to include root-level sources.');
+          } else {
+            console.log('package.json files field already includes root-level sources.');
+          }
+          NODE
+
       - name: Delete existing npm package version
         if: ${{ inputs.publish-overwrite }}
         env:
