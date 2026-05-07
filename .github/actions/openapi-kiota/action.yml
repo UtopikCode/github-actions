@@ -70,11 +70,21 @@ runs:
     - name: Generate OpenAPI spec from compiled DLL
       if: ${{ inputs.openapi-dll != '' }}
       shell: bash
-      env:
-        RUNNER_AUTH_MODE: private_token
-        RUNNER_AUTH_TOKEN: placeholder
       run: |
-        ./.tools/swagger tofile --output ${{ inputs.openapi-output }} ${{ inputs.openapi-dll }} ${{ inputs.openapi-version }}
+        REPO_ROOT="$(pwd)"
+        DLL_PATH="${{ inputs.openapi-dll }}"
+        OUTPUT_DIR="$(dirname "$DLL_PATH")"
+        if [ "$OUTPUT_DIR" = "." ]; then
+          OUTPUT_DIR="$REPO_ROOT"
+        fi
+        OPENAPI_OUTPUT="${{ inputs.openapi-output }}"
+        if [ "${OPENAPI_OUTPUT#/}" = "$OPENAPI_OUTPUT" ]; then
+          OPENAPI_OUTPUT="$REPO_ROOT/$OPENAPI_OUTPUT"
+        fi
+
+        cd "$OUTPUT_DIR"
+        ASPNETCORE_CONTENTROOT="$OUTPUT_DIR" RUNNER_AUTH_MODE=private_token RUNNER_AUTH_TOKEN=placeholder \
+          ./.tools/swagger tofile --output "$OPENAPI_OUTPUT" "$(basename "$DLL_PATH")" "${{ inputs.openapi-version }}"
 
     - name: Generate Kiota client from OpenAPI
       if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
