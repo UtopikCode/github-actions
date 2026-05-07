@@ -73,16 +73,21 @@ runs:
       run: |
         REPO_ROOT="$(pwd)"
         DLL_PATH="${{ inputs.openapi-dll }}"
-        ABS_DLL_PATH="$REPO_ROOT/$DLL_PATH"
-        OUTPUT_DIR="$(dirname "$ABS_DLL_PATH")"
+        DLL_DIR="$(dirname "$DLL_PATH")"
+        if [ "$DLL_DIR" = '.' ]; then
+          DLL_DIR="$REPO_ROOT"
+        else
+          DLL_DIR="$REPO_ROOT/$DLL_DIR"
+        fi
+
         OPENAPI_OUTPUT="${{ inputs.openapi-output }}"
         if [ "${OPENAPI_OUTPUT#/}" = "$OPENAPI_OUTPUT" ]; then
           OPENAPI_OUTPUT="$REPO_ROOT/$OPENAPI_OUTPUT"
         fi
 
-        cd "$OUTPUT_DIR"
-        ASPNETCORE_CONTENTROOT="$OUTPUT_DIR" RUNNER_AUTH_MODE=private_token RUNNER_AUTH_TOKEN=placeholder \
-          "$REPO_ROOT/.tools/swagger" tofile --output "$OPENAPI_OUTPUT" "$(basename "$ABS_DLL_PATH")" "${{ inputs.openapi-version }}"
+        cd "$DLL_DIR"
+        ASPNETCORE_CONTENTROOT="$DLL_DIR" ASPNETCORE_ENVIRONMENT=OpenApi \
+          "$REPO_ROOT/.tools/swagger" tofile --output "$OPENAPI_OUTPUT" "$(basename "$DLL_PATH")" "${{ inputs.openapi-version }}"
 
     - name: Generate Kiota client from OpenAPI
       if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
