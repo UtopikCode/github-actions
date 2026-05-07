@@ -84,7 +84,7 @@ runs:
 
         cd "$OUTPUT_DIR"
         ASPNETCORE_CONTENTROOT="$OUTPUT_DIR" RUNNER_AUTH_MODE=private_token RUNNER_AUTH_TOKEN=placeholder \
-          ./.tools/swagger tofile --output "$OPENAPI_OUTPUT" "$(basename "$DLL_PATH")" "${{ inputs.openapi-version }}"
+          "$REPO_ROOT/.tools/swagger" tofile --output "$OPENAPI_OUTPUT" "$(basename "$DLL_PATH")" "${{ inputs.openapi-version }}"
 
     - name: Generate Kiota client from OpenAPI
       if: ${{ inputs.openapi-dll != '' && inputs.kiota-output != '' }}
