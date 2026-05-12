@@ -3,27 +3,28 @@ name: Go CI
 on:
   workflow_call:
     inputs:
-      go-module:
-        description: 'Go module or package path to build.'
-        required: true
-        type: string
       go-version:
         description: 'Go SDK version.'
         required: false
         type: string
-        default: '1.22'
-      go-args:
-        description: 'Additional go build arguments.'
+        default: '1.23'
+      make-target:
+        description: 'Make target to run.'
         required: false
         type: string
-        default: './...'
+        default: 'ci'
+      working-directory:
+        description: 'Directory to run make in.'
+        required: false
+        type: string
+        default: '.'
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build project
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -37,10 +38,6 @@ jobs:
         with:
           go-version: ${{ inputs.go-version }}
 
-      - name: Download module dependencies
-        working-directory: ${{ inputs.go-module }}
-        run: go mod download
-
-      - name: Build module
-        working-directory: ${{ inputs.go-module }}
-        run: go build ${{ inputs.go-args }}
+      - name: Run full CI
+        working-directory: ${{ inputs.working-directory }}
+        run: make ${{ inputs.make-target }}

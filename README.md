@@ -9,7 +9,7 @@ A reusable GitHub Actions repository for .NET, Docker, NuGet, and preview cleanu
 - `.github/workflows/go-build.yml`
   - Reusable Go build workflow for module dependency download and build.
 - `.github/workflows/go-publish.yml`
-  - Reusable Go publish workflow for building a binary and creating a GitHub release.
+  - Go release workflow triggered by push tags named v*.
 - `.github/workflows/dotnet-codeql.yml`
   - Reusable CI workflow for static analysis, format checks, and CodeQL.
 - `.github/workflows/docker-publish.yml`
@@ -54,9 +54,9 @@ jobs:
   build:
     uses: ./.github/workflows/go-build.yml
     with:
-      go-module: '.'
-      go-version: '1.22'
-      go-args: './...'
+      go-version: '1.23'
+      make-target: 'ci'
+      working-directory: '.'
 ```
 
 ### Call a reusable workflow from another repository
@@ -81,23 +81,11 @@ jobs:
       docker-tags: 'ghcr.io/${{ github.repository_owner }}/myimage:latest'
 ```
 
-### Publish Go artifacts
+### Publish Go modules
 
-```yaml
-jobs:
-  publish_go:
-    uses: UtopikCode/github-actions/.github/workflows/go-publish.yml@main
-    with:
-      go-module: '.'
-      go-version: '1.22'
-      go-binary-name: 'mytool'
-      go-target: './cmd/mytool'
-      publish: true
-      publish-overwrite: true
-      release-tag: 'v1.0.0'
-      release-name: 'v1.0.0'
-      release-body: 'Release my Go artifact.'
-```
+This repository includes a workflow that automatically creates a GitHub release when a tag matching `v*` is pushed.
+
+The workflow file is `.github/workflows/go-publish.yml`.
 
 ### Publish NuGet packages
 

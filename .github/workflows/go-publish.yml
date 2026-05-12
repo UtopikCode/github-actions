@@ -1,61 +1,17 @@
-name: Publish Go artifacts
+name: Publish
 
 on:
-  workflow_call:
-    inputs:
-      go-module:
-        description: 'Directory containing the Go module to build.'
-        required: false
-        type: string
-        default: '.'
-      go-version:
-        description: 'Go SDK version.'
-        required: false
-        type: string
-        default: '1.22'
-      go-binary-name:
-        description: 'Name of the built binary artifact.'
-        required: false
-        type: string
-        default: ''
-      go-target:
-        description: 'Package or path to build.'
-        required: false
-        type: string
-        default: '.'
-      publish:
-        description: 'Publish a GitHub release for the built artifact.'
-        required: false
-        type: boolean
-        default: true
-      publish-overwrite:
-        description: 'Overwrite an existing GitHub release with the same tag.'
-        required: false
-        type: boolean
-        default: false
-      release-tag:
-        description: 'Git tag to use for the GitHub release.'
-        required: true
-        type: string
-      release-name:
-        description: 'Name of the GitHub release.'
-        required: false
-        type: string
-        default: ''
-      release-body:
-        description: 'Release notes body.'
-        required: false
-        type: string
-        default: ''
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
   packages: write
 
 jobs:
-  publish:
-    if: ${{ inputs.publish }}
-    name: Build & publish Go artifact
+  verify:
+    name: Verify release tag
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -67,39 +23,31 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ inputs.go-version }}
+          go-version: '1.23'
 
-      - name: Download module dependencies
-        working-directory: ${{ inputs.go-module }}
-        run: go mod download
+      - name: Run full CI
+        run: make ci
 
-      - name: Determine artifact name
-        id: artifact
-        run: |
-          binary_name="${{ inputs.go-binary-name }}"
-          if [ -z "$binary_name" ]; then
-            binary_name="$(basename "${{ github.repository }}")"
-          fi
-          if [ "$binary_name" = '.' ]; then
-            binary_name="$(basename "$PWD")"
-          fi
-          echo "BINARY_NAME=$binary_name" >> $GITHUB_ENV
-          echo "binary_name=$binary_name" >> $GITHUB_OUTPUT
-
-      - name: Build Go artifact
-        working-directory: ${{ inputs.go-module }}
-        run: |
-          mkdir -p "$GITHUB_WORKSPACE/artifacts"
-          go build -o "$GITHUB_WORKSPACE/artifacts/${{ env.BINARY_NAME }}" ${{ inputs.go-target }}
-
-      - name: Publish GitHub release
-        uses: ncipollo/release-action@v1
-        if: ${{ inputs.publish }}
+  release:
+    name: Create release
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
         with:
-          tag_name: ${{ inputs.release-tag }}
-          release_name: ${{ inputs.release-name }}
-          body: ${{ inputs.release-body }}
-          files: artifacts/${{ env.BINARY_NAME }}
-          overwrite: ${{ inputs.publish-overwrite }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          body: "Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
