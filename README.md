@@ -6,6 +6,10 @@ A reusable GitHub Actions repository for .NET, Docker, NuGet, and preview cleanu
 
 - `.github/workflows/dotnet-build.yml`
   - Reusable .NET build workflow for restore and build of a solution/project.
+- `.github/workflows/go-build.yml`
+  - Reusable Go build workflow for module dependency download and build.
+- `.github/workflows/go-publish.yml`
+  - Reusable Go publish workflow for building a binary and creating a GitHub release.
 - `.github/workflows/dotnet-codeql.yml`
   - Reusable CI workflow for static analysis, format checks, and CodeQL.
 - `.github/workflows/docker-publish.yml`
@@ -43,6 +47,18 @@ jobs:
       dotnet-version: '10.0'
 ```
 
+### Reusable Go build workflow
+
+```yaml
+jobs:
+  build:
+    uses: ./.github/workflows/go-build.yml
+    with:
+      go-module: '.'
+      go-version: '1.22'
+      go-args: './...'
+```
+
 ### Call a reusable workflow from another repository
 
 ```yaml
@@ -63,6 +79,24 @@ jobs:
     with:
       publish-docker: true
       docker-tags: 'ghcr.io/${{ github.repository_owner }}/myimage:latest'
+```
+
+### Publish Go artifacts
+
+```yaml
+jobs:
+  publish_go:
+    uses: UtopikCode/github-actions/.github/workflows/go-publish.yml@main
+    with:
+      go-module: '.'
+      go-version: '1.22'
+      go-binary-name: 'mytool'
+      go-target: './cmd/mytool'
+      publish: true
+      publish-overwrite: true
+      release-tag: 'v1.0.0'
+      release-name: 'v1.0.0'
+      release-body: 'Release my Go artifact.'
 ```
 
 ### Publish NuGet packages
