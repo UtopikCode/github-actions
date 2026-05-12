@@ -83,9 +83,26 @@ jobs:
 
 ### Publish Go modules
 
-This repository includes a workflow that automatically creates a GitHub release when a tag matching `v*` is pushed.
+This repository includes a reusable workflow that creates a GitHub release when invoked by a workflow call.
 
-The workflow file is `.github/workflows/go-publish.yml`.
+Example parent workflow:
+
+```yaml
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    uses: UtopikCode/github-actions/.github/workflows/go-publish.yml@main
+    with:
+      go-version: '1.23'
+      make-target: 'ci'
+      working-directory: '.'
+```
+
+The release tag is determined from `github.ref_name` or from the optional `tag-name` input.
 
 ### Publish NuGet packages
 

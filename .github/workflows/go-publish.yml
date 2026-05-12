@@ -1,9 +1,43 @@
 name: Publish
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
+    inputs:
+      tag-name:
+        description: 'Release tag name to publish. If omitted, github.ref_name is used.'
+        required: false
+        type: string
+        default: ''
+      go-version:
+        description: 'Go SDK version.'
+        required: false
+        type: string
+        default: '1.23'
+      make-target:
+        description: 'Make target to run in the module directory.'
+        required: false
+        type: string
+        default: 'ci'
+      working-directory:
+        description: 'Directory to run make in.'
+        required: false
+        type: string
+        default: '.'
+      release-body:
+        description: 'Release notes body. If blank, a default body is created.'
+        required: false
+        type: string
+        default: ''
+      draft:
+        description: 'Create the release as a draft.'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Create the release as a prerelease.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -23,10 +57,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.23'
+          go-version: ${{ inputs.go-version }}
 
       - name: Run full CI
-        run: make ci
+        working-directory: ${{ inputs.working-directory }}
+        run: make ${{ inputs.make-target }}
 
   release:
     name: Create release
@@ -41,13 +76,34 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Determine release tag
+        id: determine-tag
+        run: |
+          TAG_NAME="${{ inputs.tag-name }}"
+          if [ -z "$TAG_NAME" ]; then
+            TAG_NAME="${GITHUB_REF_NAME:-}"
+          fi
+          if [ -z "$TAG_NAME" ]; then
+            echo 'ERROR: tag-name not provided and github.ref_name is not available.'
+            exit 1
+          fi
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
+      - name: Determine release body
+        run: |
+          if [ -n "${{ inputs.release-body }}" ]; then
+            echo "RELEASE_BODY=${{ inputs.release-body }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_BODY=Release ${TAG_NAME}" >> $GITHUB_ENV
+          fi
+
       - name: Create GitHub release
         uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
-          body: "Release ${{ github.ref_name }}"
-          draft: false
-          prerelease: false
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: ${{ env.TAG_NAME }}
+          body: ${{ env.RELEASE_BODY }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
