@@ -7,7 +7,7 @@ on:
         description: '.NET SDK version.'
         required: false
         type: string
-        default: '10.0'
+        default: '11.0'
       kiota-class-name:
         description: 'Generated Kiota client class name.'
         required: false
@@ -90,13 +90,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 1
           persist-credentials: false
 
       - name: Checkout workflow repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           repository: UtopikCode/github-actions
           path: workflow-repo

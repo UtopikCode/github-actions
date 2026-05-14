@@ -29,6 +29,8 @@ A reusable GitHub Actions repository for .NET, Docker, NuGet, and preview cleanu
 
 ## Usage
 
+> This repository uses exact action version pins and current tool defaults in workflow examples for reproducible CI.
+
 ### Call a reusable workflow in this repo
 
 ```yaml
@@ -44,7 +46,7 @@ jobs:
     uses: ./.github/workflows/dotnet-build.yml
     with:
       solution: 'src/MySolution.sln'
-      dotnet-version: '10.0'
+      dotnet-version: '11.0'
 ```
 
 ### Reusable Go build workflow
@@ -54,7 +56,7 @@ jobs:
   build:
     uses: ./.github/workflows/go-build.yml
     with:
-      go-version: '1.23'
+      go-version: '1.26.3'
       make-target: 'ci'
       working-directory: '.'
 ```
@@ -67,7 +69,7 @@ jobs:
     uses: UtopikCode/github-actions/.github/workflows/dotnet-build.yml@main
     with:
       solution: 'src/MySolution.sln'
-      dotnet-version: '10.0'
+      dotnet-version: '11.0'
 ```
 
 ### Publish Docker images
@@ -97,7 +99,7 @@ jobs:
   publish:
     uses: UtopikCode/github-actions/.github/workflows/go-publish.yml@main
     with:
-      go-version: '1.23'
+      go-version: '1.26.3'
       make-target: 'ci'
       working-directory: '.'
 ```
@@ -114,7 +116,7 @@ jobs:
       publish-nuget: true
       package-project: 'src/MyPackage/MyPackage.csproj'
       package-version: '1.0.0'
-      dotnet-version: '10.0'
+      dotnet-version: '11.0'
 ```
 
 ### Publish npm packages
@@ -128,7 +130,7 @@ jobs:
       package-dir: 'packages/my-ts-package'
       package-version: '1.0.0'
       npm-tag: 'latest'
-      node-version: '20'
+      node-version: '26.1.0'
       registry: 'https://npm.pkg.github.com/'
       npm-auth-token: ${{ secrets.GITHUB_TOKEN }}
       overwrite: true
@@ -141,7 +143,7 @@ jobs:
   publish_openapi:
     uses: UtopikCode/github-actions/.github/workflows/openapi-publish.yml@main
     with:
-      dotnet-version: '10.0'
+      dotnet-version: '11.0'
       openapi-dll: 'src/MyApi/bin/Release/net10/MyApi.dll'
       openapi-output: 'openapi.json'
       openapi-upload-artifact: true
@@ -161,7 +163,7 @@ jobs:
       package-dir: 'packages/my-ts-package'
       package-version: '1.0.0'
       npm-tag: 'latest'
-      node-version: '20'
+      node-version: '26.1.0'
       registry: 'https://registry.npmjs.org/'
       npm-auth-token: ${{ secrets.NPM_TOKEN }}
 ```
@@ -177,7 +179,7 @@ jobs:
       package-dir: 'packages/my-ts-client'
       package-version: '1.0.0'
       npm-tag: 'latest'
-      node-version: '20'
+      node-version: '26.1.0'
       registry: 'https://npm.pkg.github.com/'
       npm-auth-token: ${{ secrets.GITHUB_TOKEN }}
       openapi-project: 'src/MyApi/MyApi.csproj'
@@ -204,7 +206,7 @@ For GitHub Packages, use the package scope that matches the repository owner/org
 steps:
   - uses: UtopikCode/github-actions/.github/actions/dotnet-setup@main
     with:
-      dotnet-version: '10.0'
+      dotnet-version: '11.0'
       github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 

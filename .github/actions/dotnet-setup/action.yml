@@ -7,7 +7,7 @@ inputs:
   dotnet-version:
     description: '.NET SDK version.'
     required: false
-    default: '10.0'
+    default: '11.0'
   github-token:
     description: 'GitHub token used for GitHub Packages authentication.'
     required: true

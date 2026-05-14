@@ -11,7 +11,7 @@ on:
         description: '.NET SDK version.'
         required: false
         type: string
-        default: '10.0'
+        default: '11.0'
       run-lint:
         description: 'Run static analysis checks.'
         required: false
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -111,7 +111,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@v4.35.4
         with:
           languages: csharp
           build-mode: manual
@@ -120,4 +120,4 @@ jobs:
         run: dotnet build ${{ inputs.solution }} --configuration Debug
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@v4.35.4
