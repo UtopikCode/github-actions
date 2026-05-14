@@ -8,11 +8,6 @@ on:
         required: false
         type: string
         default: '1.26.3'
-      make-target:
-        description: 'Make target to run.'
-        required: false
-        type: string
-        default: 'ci'
       working-directory:
         description: 'Directory to run make in.'
         required: false
@@ -23,8 +18,8 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    name: CI
+  tests:
+    name: Tests project
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,6 +33,6 @@ jobs:
         with:
           go-version: ${{ inputs.go-version }}
 
-      - name: Run full CI
+      - name: Run Tests
         working-directory: ${{ inputs.working-directory }}
-        run: make ${{ inputs.make-target }}
+        run: make ci
